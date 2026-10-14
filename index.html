@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MineForge Gear | Official D2C Brand Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="ore-topbar">
+    <div class="ore-topbar-left">
+      <div class="brand-emblem" aria-hidden="true">⛏</div>
+      <span class="topbar-store-tag">MINEFORGE GEAR</span>
+      <span class="badge-d2c">OFFICIAL D2C STORE</span>
+    </div>
+
+    <h1 class="ore-screen-title">CATALOG &amp; ALGORITHM VISUALIZER</h1>
+
+    <div class="ore-topbar-right">
+      <button id="btnStartTour" class="btn btn-secondary btn-sm" type="button">
+        [?] PANDUAN APLIKASI
+      </button>
+      <button id="btnOpenCodeModal" class="btn btn-secondary btn-sm" type="button">
+        [&lt;/&gt;] LIHAT KODE (C &amp; JS)
+      </button>
+      <button id="btnOpenInfoModal" class="btn btn-secondary btn-sm" type="button">
+        [i] INFO PROYEK
+      </button>
+      <button id="btnOpenCart" class="btn btn-primary btn-sm" type="button" aria-label="Buka Keranjang Belanja">
+        <span>KERANJANG</span>
+        <span id="cartBadgeCounter" class="ore-counter-badge">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <section class="ore-panel control-panel" aria-label="Kontrol Algoritma Sorting dan Searching">
+      <div class="control-grid-top">
+        <div id="tourSortingPanel" class="ore-subpanel">
+          <div class="ore-subpanel-header">
+            <h2 class="control-heading">1. PENGURUTAN KATALOG (SORTING)</h2>
+            <p class="control-desc">Urutkan Array produk in-place dengan Insertion Sort atau Selection Sort</p>
+          </div>
+          <div class="control-row">
+            <div class="field-item">
+              <label for="sortMethod">Metode Algoritma</label>
+              <div class="ore-select-wrapper">
+                <select id="sortMethod" class="ore-select">
+                  <option value="insertion">Insertion Sort</option>
+                  <option value="selection">Selection Sort</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-item">
+              <label for="sortProperty">Properti Urut</label>
+              <div class="ore-select-wrapper">
+                <select id="sortProperty" class="ore-select">
+                  <option value="price">Harga (Price)</option>
+                  <option value="rating">Rating Bintang</option>
+                  <option value="id">ID Produk</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-item">
+              <label for="sortDirection">Arah Urutan</label>
+              <div class="ore-select-wrapper">
+                <select id="sortDirection" class="ore-select">
+                  <option value="asc">Ascending (Kecil &rarr; Besar)</option>
+                  <option value="desc">Descending (Besar &rarr; Kecil)</option>
+                </select>
+              </div>
+            </div>
+
+            <button id="btnRunSort" class="btn btn-primary" type="button">
+              JALANKAN SORTING
+            </button>
+            <button id="btnResetCatalog" class="btn btn-secondary" type="button">
+              RESET
+            </button>
+          </div>
+        </div>
+
+        <div id="tourSearchingPanel" class="ore-subpanel">
+          <div class="ore-subpanel-header">
+            <h2 class="control-heading">2. PENCARIAN PRODUK (SEARCHING)</h2>
+            <p class="control-desc">Telusuri dengan Linear Search atau Binary Search (wajib urut dulu)</p>
+          </div>
+          <div class="control-row">
+            <div class="field-item">
+              <label for="searchMethod">Metode Cari</label>
+              <div class="ore-select-wrapper">
+                <select id="searchMethod" class="ore-select">
+                  <option value="linear">Linear Search</option>
+                  <option value="binary">Binary Search</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="binaryPropertyField" class="field-item hidden">
+              <label for="searchProperty">Properti Binary</label>
+              <div class="ore-select-wrapper">
+                <select id="searchProperty" class="ore-select">
+                  <option value="id">ID Produk</option>
+                  <option value="price">Harga (Price)</option>
+                  <option value="rating">Rating Bintang</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-item field-grow">
+              <label for="searchKeyword">Kata Kunci / Nilai Target</label>
+              <input
+                type="text"
+                id="searchKeyword"
+                class="ore-input"
+                placeholder="Ketik Creeper, Hoodie, atau 205..."
+                autocomplete="off"
+              >
+            </div>
+            <button id="btnRunSearch" class="btn btn-primary" type="button">
+              CARI PRODUK
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tourExecutionBar" class="ore-execution-bar">
+        <div class="exec-block">
+          <span class="exec-label">Mode Eksekusi Generator</span>
+          <div class="ore-segmented-group" role="radiogroup" aria-label="Mode Eksekusi">
+            <label class="ore-segment-item">
+              <input type="radio" name="playbackMode" value="animated" checked>
+              <span class="segment-box">ANIMASI INTERAKTIF</span>
+            </label>
+            <label class="ore-segment-item">
+              <input type="radio" name="playbackMode" value="instant">
+              <span class="segment-box">INSTAN (LANGSUNG)</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="speedControlBlock" class="exec-block exec-slider-block">
+          <div class="slider-header-row">
+            <label for="speedRangeInput" class="exec-label">Jeda Antar Langkah</label>
+            <span id="speedValueLabel" class="ore-slider-value">600 ms</span>
+          </div>
+          <input
+            type="range"
+            id="speedRangeInput"
+            class="ore-slider"
+            min="150"
+            max="1500"
+            step="50"
+            value="600"
+          >
+        </div>
+
+        <div class="exec-block exec-transport-block">
+          <div class="transport-header-row">
+            <span class="exec-label">Kontrol Langkah (Auto &amp; Manual)</span>
+            <span id="engineStatusIndicator" class="ore-status-tag">SIAP (IDLE)</span>
+          </div>
+          <div class="transport-buttons-row">
+            <button id="btnStepPrev" class="btn btn-secondary btn-transport" type="button" disabled title="Langkah Sebelumnya">
+              &lt;&lt; PREV
+            </button>
+            <button id="btnStepPauseResume" class="btn btn-primary btn-transport" type="button" disabled title="Jeda atau Lanjutkan Animasi Otomatis">
+              PAUSE
+            </button>
+            <button id="btnStepNext" class="btn btn-secondary btn-transport" type="button" disabled title="Langkah Berikutnya">
+              NEXT &gt;&gt;
+            </button>
+            <button id="btnStepStop" class="btn btn-danger btn-transport" type="button" disabled title="Akhiri ke Langkah Terakhir">
+              END
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ore-metrics-bar" aria-label="Statistik Operasi Algoritma">
+        <div class="metric-box">
+          <span class="metric-label">ALGORITMA AKTIF</span>
+          <strong id="metricActiveAlgo" class="metric-value">BELUM ADA</strong>
+        </div>
+        <div class="metric-box">
+          <span class="metric-label">TOTAL PERBANDINGAN (COMPARISONS)</span>
+          <strong id="metricComparisons" class="metric-value">0</strong>
+        </div>
+        <div class="metric-box">
+          <span class="metric-label">PERGESERAN / PERTUKARAN (SHIFTS / SWAPS)</span>
+          <strong id="metricShiftsSwaps" class="metric-value">0</strong>
+        </div>
+        <div class="metric-box">
+          <span class="metric-label">DURASI KOMPUTASI GENERATOR</span>
+          <strong id="metricDuration" class="metric-value">0.00 ms</strong>
+        </div>
+      </div>
+
+      <div id="stepVisualizerBanner" class="ore-message-banner banner-info">
+        <div class="banner-main-info">
+          <div class="banner-meta-row">
+            <span id="stepTypeBadge" class="ore-step-badge">IDLE</span>
+            <span id="stepProgressText" class="ore-step-counter">LANGKAH 0 / 0</span>
+          </div>
+          <p id="stepHumanExplanation" class="banner-message-text">
+            Pilih "Jalankan Sorting" atau "Cari Produk" untuk memulai visualisasi algoritma. Anda dapat menjeda (Pause) lalu menekan Prev/Next kapan saja.
+          </p>
+        </div>
+
+        <div id="keyHolderBox" class="ore-key-slot hidden">
+          <span id="keyHolderLabel" class="key-slot-title">KEY SEMENTARA (DIPEGANG)</span>
+          <div id="keyHolderContent" class="key-slot-value">-</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tourCatalogSection" class="catalog-section" aria-label="Katalog Produk Resmi">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">ETALASE KATALOG PRODUK (10 ELEMEN ARRAY)</h2>
+          <p class="section-subtitle">
+            Setiap kartu merepresentasikan <code>Struct Product</code> beserta alamat memori statisnya.
+          </p>
+        </div>
+
+        <div class="ore-legend-bar">
+          <span class="legend-chip chip-key">KEY / TARGET</span>
+          <span class="legend-chip chip-compare">PEMBANDING [j]</span>
+          <span class="legend-chip chip-shift">GESER / SWAP</span>
+          <span class="legend-chip chip-insert">DISISIPKAN</span>
+          <span class="legend-chip chip-found">COCOK (MATCH)</span>
+        </div>
+      </div>
+
+      <div id="productGrid" class="product-grid">
+        <!-- Dirender secara dinamis oleh js/app.js -->
+      </div>
+    </section>
+
+    <section id="tourTerminalSection" class="ore-panel terminal-section" aria-label="Terminal Log Eksekusi Algoritma">
+      <div class="terminal-header">
+        <div class="terminal-title-group">
+          <span class="cmd-icon" aria-hidden="true">&gt;_</span>
+          <h2 class="terminal-title">COMMAND LOG CONSOLE (STEP-BY-STEP EXECUTION LOGGER)</h2>
+        </div>
+        <div class="terminal-actions">
+          <span id="logCounterBadge" class="ore-log-badge">0 BARIS LOG</span>
+          <button id="btnCopyLog" class="btn btn-secondary btn-sm" type="button">SALIN LOG</button>
+          <button id="btnClearLog" class="btn btn-danger btn-sm" type="button">BERSIHKAN</button>
+        </div>
+      </div>
+      <div id="terminalOutput" class="terminal-body" role="log" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <div id="cartDrawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="cartDrawer" class="ore-party-drawer" aria-label="Keranjang Belanja Singly Linked List">
+    <div class="party-drawer-top">
+      <div class="party-title-box">
+        <h2 class="party-heading">KERANJANG (LINKED LIST)</h2>
+      </div>
+      <button id="btnCloseCart" class="ore-close-btn" type="button" aria-label="Tutup Keranjang">X</button>
+    </div>
+
+    <div class="party-section-block">
+      <div class="party-tab-header tab-yellow">
+        <span>HEAP MEMORY POINTER CHAIN</span>
+        <span id="linkedListNodeCount">0 NODE</span>
+      </div>
+      <div class="pointer-visualizer-box">
+        <div id="linkedListDiagram" class="pointer-chain-code">
+          [Head] NULL
+        </div>
+      </div>
+    </div>
+
+    <div class="party-section-block party-list-grow">
+      <div class="party-tab-header tab-blue">
+        <span>DAFTAR SIMPUL BARANG (CART NODES)</span>
+      </div>
+      <div id="cartItemsContainer" class="cart-items-list"></div>
+    </div>
+
+    <div class="party-drawer-footer">
+      <div class="cart-summary-row">
+        <span>Total Kuantitas Barang:</span>
+        <strong id="cartTotalQty">0 Item</strong>
+      </div>
+      <div class="cart-summary-row total-price-row">
+        <span>Total Pembayaran:</span>
+        <strong id="cartSubtotalPrice">Rp 0</strong>
+      </div>
+      <button id="btnCheckoutOpen" class="btn btn-primary btn-block" type="button" disabled>
+        LANJUT KE CHECKOUT QRIS
+      </button>
+    </div>
+  </aside>
+
+  <div id="checkoutModalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="checkoutModalTitle">
+    <div class="ore-modal-card">
+      <div class="ore-modal-header">
+        <h2 id="checkoutModalTitle" class="ore-modal-title">CHECKOUT PESANAN RESMI D2C</h2>
+        <button id="btnCloseModal" class="ore-close-btn" type="button" aria-label="Tutup Modal Checkout">X</button>
+      </div>
+
+      <div class="ore-modal-body">
+        <div class="qris-reward-box">
+          <span class="reward-label">SCAN QRIS PAYMENT</span>
+          <div id="qrisImageWrapper" class="qris-frame">
+            <img
+              id="qrisImage"
+              src="assets/images/qris-dummy.png"
+              alt="QRIS Dummy MineForge Gear"
+              class="qris-img"
+            >
+          </div>
+          <p class="qris-caption">Pindai kode QRIS di atas untuk simulasi pelunasan transaksi.</p>
+        </div>
+
+        <div class="order-summary-panel">
+          <h3 class="summary-heading">RINGKASAN SIMPUL LINKED LIST:</h3>
+          <ul id="checkoutOrderList" class="checkout-order-list"></ul>
+          <div class="checkout-total-bar">
+            <span>TOTAL TAGIHAN:</span>
+            <strong id="checkoutTotalAmount">Rp 0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="ore-modal-footer">
+        <button id="btnCancelCheckout" class="btn btn-secondary" type="button">KEMBALI</button>
+        <button id="btnConfirmPayment" class="btn btn-primary" type="button">
+          SELESAIKAN PEMBAYARAN
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="receiptModalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="receiptModalTitle">
+    <div class="ore-modal-card ore-modal-wide">
+      <div class="ore-modal-header">
+        <h2 id="receiptModalTitle" class="ore-modal-title">BUKTI TRANSAKSI DIGITAL D2C</h2>
+        <button id="btnCloseReceiptModal" class="ore-close-btn" type="button" aria-label="Tutup Resi Digital">X</button>
+      </div>
+
+      <div class="ore-modal-body">
+        <div class="receipt-banner-top">
+          <div>
+            <span class="receipt-status-tag">LUNAS / VERIFIED D2C ORDER</span>
+            <h3 id="receiptInvoiceId" class="receipt-invoice-code">INV-0x7FFE-0000</h3>
+            <p id="receiptTimestamp" class="receipt-time-text">-</p>
+          </div>
+          <div class="receipt-qr-mini">
+            <img id="receiptQrImg" alt="QR Verifikasi Resi" class="receipt-qr-img">
+            <span>VERIFIKASI</span>
+          </div>
+        </div>
+
+        <div class="order-summary-panel">
+          <h3 class="summary-heading">DAFTAR SIMPUL LINKED LIST YANG DITRANSAKSIKAN:</h3>
+          <div id="receiptNodeList" class="receipt-node-table"></div>
+          <div class="checkout-total-bar">
+            <span>TOTAL PEMBAYARAN LUNAS:</span>
+            <strong id="receiptGrandTotal">Rp 0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="ore-modal-footer">
+        <button id="btnFinishNewTransaction" class="btn btn-primary btn-block" type="button">
+          TUTUP &amp; TRANSAKSI BARU (CART.CLEAR)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="codeModalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="codeModalTitle">
+    <div class="ore-modal-card ore-modal-xl">
+      <div class="ore-modal-header">
+        <h2 id="codeModalTitle" class="ore-modal-title">[&lt;/&gt;] CODE INSPECTOR: STRUKTUR DATA C vs JAVASCRIPT ES6</h2>
+        <button id="btnCloseCodeModal" class="ore-close-btn" type="button" aria-label="Tutup Modal Kode">X</button>
+      </div>
+
+      <div class="ore-modal-body">
+        <div class="code-inspector-toolbar">
+          <div class="ore-segmented-group code-lang-tabs" role="tablist">
+            <button id="tabBtnLangC" class="btn btn-primary btn-sm" type="button" data-lang="c">
+              BAHASA C (STRUCT, POINTER &amp; ALGORITMA)
+            </button>
+            <button id="tabBtnLangJS" class="btn btn-secondary btn-sm" type="button" data-lang="js">
+              JAVASCRIPT ES6 (GENERATOR FUNCTION*)
+            </button>
+          </div>
+
+          <div class="field-item">
+            <div class="ore-select-wrapper">
+              <select id="codeTopicSelect" class="ore-select">
+                <option value="struct_pointer">1. Struct Product &amp; Singly Linked List Pointer</option>
+                <option value="insertion_sort">2. Insertion Sort Algorithm</option>
+                <option value="selection_sort">3. Selection Sort Algorithm</option>
+                <option value="searching">4. Linear Search &amp; Binary Search</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="btnCopySourceCode" class="btn btn-secondary btn-sm" type="button">
+            SALIN KODE
+          </button>
+        </div>
+
+        <pre class="ore-code-viewer"><code id="codeInspectorOutput"></code></pre>
+      </div>
+
+      <div class="ore-modal-footer">
+        <button id="btnCloseCodeModalFooter" class="btn btn-secondary" type="button">TUTUP INSPECTOR</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="infoModalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
+    <div class="ore-modal-card ore-modal-wide">
+      <div class="ore-modal-header">
+        <h2 id="infoModalTitle" class="ore-modal-title">INFORMASI PROYEK &amp; STRUKTUR DATA</h2>
+        <button id="btnCloseInfoModal" class="ore-close-btn" type="button" aria-label="Tutup Modal Info">X</button>
+      </div>
+
+      <div class="ore-modal-body">
+        <div class="info-identity-card">
+          <h3>IDENTITAS PENGEMBANG PROYEK UTS</h3>
+          <div class="identity-grid">
+            <div><span>Nama Mahasiswa:</span> <strong>Asfadavy Aulia Atmadja</strong></div>
+            <div><span>NIM:</span> <strong>25050974087 (Ganjil — E-Commerce)</strong></div>
+            <div><span>Program Studi:</span> <strong>S1 Pendidikan Teknologi Informasi — UNESA</strong></div>
+            <div><span>Dosen Pengampu:</span> <strong>Muhammad Sonhaji Akbar, S.Pd., M.Kom.</strong></div>
+          </div>
+        </div>
+
+        <h3 class="info-section-heading">IMPLEMENTASI 5 KOMPONEN WAJIB STRUKTUR DATA</h3>
+        <div class="ds-info-grid">
+          <div class="ds-info-item">
+            <span class="ds-info-title">1. Array In-Memory (js/data.js &amp; js/repository.js)</span>
+            <p>Menyimpan 10 elemen katalog produk di memori utama dengan pemisahan konstanta data master (`MASTER_PRODUCTS_DATA`) dan kloning objek imutabel.</p>
+          </div>
+          <div class="ds-info-item">
+            <span class="ds-info-title">2. Struct / Class Entitas (js/struct.js)</span>
+            <p>Representasi struktur data heterogen melalui <code>class Product</code> (ID, nama, kategori, harga, rating, stok, alamat memori) serta <code>class CartNode</code>.</p>
+          </div>
+          <div class="ds-info-item">
+            <span class="ds-info-title">3. Pointer / Singly Linked List (js/struct.js)</span>
+            <p>Keranjang belanja dikelola menggunakan rantai pointer objek nyata di Heap Memory (<code>this.head</code> dan referensi <code>this.next</code>) untuk operasi tambah, kurang kuantitas, hapus simpul, dan <code>clear()</code>.</p>
+          </div>
+          <div class="ds-info-item">
+            <span class="ds-info-title">4. Sorting + Step Log (js/algorithms.js)</span>
+            <p>Menggunakan algoritma murni <strong>Insertion Sort</strong> dan <strong>Selection Sort</strong> berbasis Generator (<code>function*</code>) lengkap dengan penghitungan metrik perbandingan &amp; pergeseran/pertukaran.</p>
+          </div>
+          <div class="ds-info-item">
+            <span class="ds-info-title">5. Searching + Step Log (js/algorithms.js)</span>
+            <p>Menggunakan algoritma murni <strong>Linear Search</strong> dan <strong>Binary Search</strong> (dengan validasi keterurutan Array) berbasis Generator (<code>function*</code>).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ore-modal-footer">
+        <button id="btnCloseInfoModalFooter" class="btn btn-secondary" type="button">TUTUP INFORMASI</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container" aria-live="assertive"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
