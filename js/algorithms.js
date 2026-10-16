@@ -32,36 +32,47 @@ export function* insertionSort(items, property, direction = 'asc') {
     let j = i - 1;
 
     comparisons++;
+    const initialCompareSnapshot = [...arr];
+    initialCompareSnapshot[i] = key;
     yield {
       type: 'COMPARE',
-      indices: { active: i, compare: j },
+      indices: { active: i, compare: j, passIndex: i },
+      keyProduct: key,
       metrics: { comparisons, shiftsOrSwaps: shifts },
-      arraySnapshot: [...arr],
+      arraySnapshot: initialCompareSnapshot,
       logMessage: `[INSERTION][PASS ${i}][COMPARE] Menguji Key "${key.name}" (${property}: ${key[property]}) dengan Indeks [${j}] "${arr[j].name}" (${property}: ${arr[j][property]})`
     };
 
     while (j >= 0 && (
       direction === 'asc' ? arr[j][property] > key[property] : arr[j][property] < key[property]
     )) {
-      arr[j + 1] = arr[j];
+      const shiftedItem = arr[j];
+      arr[j + 1] = shiftedItem;
       shifts++;
+      const shiftSnapshot = [...arr];
+      shiftSnapshot[j] = key;
       yield {
         type: 'SHIFT',
-        indices: { active: j + 1, compare: j },
+        indices: { active: j + 1, compare: j, passIndex: i },
+        keyProduct: key,
+        shiftedProduct: shiftedItem,
         metrics: { comparisons, shiftsOrSwaps: shifts },
-        arraySnapshot: [...arr],
-        logMessage: `[INSERTION][PASS ${i}][SHIFT] Menggeser "${arr[j].name}" dari posisi [${j}] ke [${j + 1}]`
+        arraySnapshot: shiftSnapshot,
+        logMessage: `[INSERTION][PASS ${i}][SHIFT] Menggeser elemen [${j}] ('${shiftedItem.name}') ke kanan menuju [${j + 1}] dan memindahkan slot Key ('${key.name}') ke [${j}].`
       };
-      j--;
 
+      j--;
       if (j >= 0) {
         comparisons++;
+        const nextCompareSnapshot = [...arr];
+        nextCompareSnapshot[j + 1] = key;
         yield {
           type: 'COMPARE',
-          indices: { active: j + 1, compare: j },
+          indices: { active: j + 1, compare: j, passIndex: i },
+          keyProduct: key,
           metrics: { comparisons, shiftsOrSwaps: shifts },
-          arraySnapshot: [...arr],
-          logMessage: `[INSERTION][PASS ${i}][COMPARE] Menguji Key "${key.name}" (${property}: ${key[property]}) dengan Indeks [${j}] "${arr[j].name}" (${property}: ${arr[j][property]})`
+          arraySnapshot: nextCompareSnapshot,
+          logMessage: `[INSERTION][PASS ${i}][COMPARE] Menguji Key "${key.name}" (${property}: ${key[property]}) pada slot [${j + 1}] dengan Indeks [${j}] "${arr[j].name}" (${property}: ${arr[j][property]})`
         };
       }
     }
@@ -69,19 +80,21 @@ export function* insertionSort(items, property, direction = 'asc') {
     arr[j + 1] = key;
     yield {
       type: 'INSERT',
-      indices: { active: j + 1, compare: null },
+      indices: { active: j + 1, compare: null, passIndex: i },
+      keyProduct: key,
       metrics: { comparisons, shiftsOrSwaps: shifts },
       arraySnapshot: [...arr],
-      logMessage: `[INSERTION][PASS ${i}][INSERT] Menempatkan Key "${key.name}" pada posisi indeks [${j + 1}]`
+      logMessage: `[INSERTION][PASS ${i}][INSERT] Menempatkan Key "${key.name}" secara permanen pada Indeks [${j + 1}]`
     };
   }
 
   yield {
     type: 'COMPLETE',
     indices: { active: null, compare: null },
+    keyProduct: null,
     metrics: { comparisons, shiftsOrSwaps: shifts },
     arraySnapshot: [...arr],
-    logMessage: `[INSERTION][COMPLETE] Pengurutan ${property.toUpperCase()} (${direction.toUpperCase()}) selesai. Total Perbandingan: ${comparisons}, Pergeseran: ${shifts}.`
+    logMessage: `[INSERTION][COMPLETE] Pengurutan ${property.toUpperCase()} (${direction.toUpperCase()}) selesai. Total Perbandingan: ${comparisons}, Pergeseran (Shift): ${shifts}.`
   };
 }
 
@@ -103,7 +116,8 @@ export function* selectionSort(items, property, direction = 'asc') {
       comparisons++;
       yield {
         type: 'COMPARE',
-        indices: { active: targetIdx, compare: j },
+        indices: { active: targetIdx, compare: j, passStart: i },
+        keyProduct: arr[targetIdx],
         metrics: { comparisons, shiftsOrSwaps: swaps },
         arraySnapshot: [...arr],
         logMessage: `[SELECTION][PASS ${i + 1}][COMPARE] Membandingkan kandidat ${targetLabel} [${targetIdx}] "${arr[targetIdx].name}" (${arr[targetIdx][property]}) dengan [${j}] "${arr[j].name}" (${arr[j][property]})`
@@ -117,7 +131,8 @@ export function* selectionSort(items, property, direction = 'asc') {
         targetIdx = j;
         yield {
           type: 'MIN_FOUND',
-          indices: { active: targetIdx, compare: i },
+          indices: { active: targetIdx, compare: i, passStart: i },
+          keyProduct: arr[targetIdx],
           metrics: { comparisons, shiftsOrSwaps: swaps },
           arraySnapshot: [...arr],
           logMessage: `[SELECTION][PASS ${i + 1}][MIN_FOUND] Kandidat ${targetLabel} baru ditemukan pada Indeks [${targetIdx}]: "${arr[targetIdx].name}" (${property}: ${arr[targetIdx][property]})`
@@ -126,17 +141,26 @@ export function* selectionSort(items, property, direction = 'asc') {
     }
 
     if (targetIdx !== i) {
-      const temp = arr[i];
-      arr[i] = arr[targetIdx];
-      arr[targetIdx] = temp;
+      const originalAtI = arr[i];
+      const extremeAtTarget = arr[targetIdx];
+      arr[i] = extremeAtTarget;
+      arr[targetIdx] = originalAtI;
       swaps++;
 
       yield {
         type: 'SWAP',
         indices: { active: i, compare: targetIdx },
+        keyProduct: extremeAtTarget,
+        swapMeta: {
+          fromIndex: i,
+          fromName: originalAtI.name,
+          toIndex: targetIdx,
+          toName: extremeAtTarget.name,
+          targetLabel: targetLabel.toLowerCase()
+        },
         metrics: { comparisons, shiftsOrSwaps: swaps },
         arraySnapshot: [...arr],
-        logMessage: `[SELECTION][PASS ${i + 1}][SWAP] Menukar posisi Indeks [${i}] "${arr[targetIdx].name}" dengan Indeks [${targetIdx}] "${arr[i].name}"`
+        logMessage: `[SELECTION][PASS ${i + 1}][SWAP] Menukar (SWAP) elemen Indeks [${i}] ('${originalAtI.name}') dengan target ${targetLabel.toLowerCase()} Indeks [${targetIdx}] ('${extremeAtTarget.name}').`
       };
     }
   }
@@ -144,6 +168,7 @@ export function* selectionSort(items, property, direction = 'asc') {
   yield {
     type: 'COMPLETE',
     indices: { active: null, compare: null },
+    keyProduct: null,
     metrics: { comparisons, shiftsOrSwaps: swaps },
     arraySnapshot: [...arr],
     logMessage: `[SELECTION][COMPLETE] Selection Sort ${property.toUpperCase()} (${direction.toUpperCase()}) selesai. Total Perbandingan: ${comparisons}, Pertukaran (Swap): ${swaps}.`
