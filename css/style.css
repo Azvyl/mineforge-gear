@@ -1,3 +1,19 @@
+@font-face {
+  font-family: 'Minecraft Ten';
+  src: url('../assets/fonts/MinecraftTen.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Mojangles';
+  src: url('../assets/fonts/Minecraft-Seven_v2.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --ore-bg-darkest: #141416;
   --ore-bg-base: #1e1e22;
@@ -40,9 +56,10 @@
   --text-muted: #b6b8be;
   --text-dark: #141416;
 
-  --font-pixel-title: 'Silkscreen', 'Courier New', monospace;
-  --font-pixel-mono: 'VT323', 'Consolas', monospace;
-  --font-ui: 'Silkscreen', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Minecraft Ten', 'Silkscreen', sans-serif;
+  --font-pixel-ui: 'Mojangles', 'Silkscreen', monospace;
+  --font-body: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-code: 'Consolas', 'Courier New', monospace;
 }
 
 * {
@@ -59,8 +76,9 @@ body {
     linear-gradient(180deg, #18181b 0%, #232429 100%);
   background-size: 24px 24px, 100% 100%;
   color: var(--text-light);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.45;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.5;
   min-height: 100vh;
   padding-bottom: 7.5rem !important;
 }
@@ -107,10 +125,10 @@ body {
 }
 
 .topbar-store-tag {
-  font-family: var(--font-pixel-title);
+  font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.92rem;
-  letter-spacing: -0.02em;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
   color: var(--text-dark);
   line-height: 1;
   padding-bottom: 2px;
@@ -120,8 +138,8 @@ body {
   background: var(--ore-bg-panel);
   color: var(--ore-yellow-gold);
   border: 2px solid var(--ore-border-black);
-  font-family: var(--font-pixel-title);
-  font-size: 0.6rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.62rem;
   line-height: 1;
   padding: 0.22rem 0.45rem 0.28rem 0.45rem;
   display: inline-flex;
@@ -129,9 +147,10 @@ body {
 }
 
 .ore-screen-title {
-  font-family: var(--font-pixel-title);
-  font-size: 0.95rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   font-weight: 700;
+  letter-spacing: 0.04em;
   color: var(--text-dark);
   text-align: center;
   line-height: 1.1;
@@ -147,7 +166,7 @@ body {
 .ore-counter-badge {
   background: var(--ore-border-black);
   color: var(--ore-yellow-gold);
-  font-family: var(--font-pixel-title);
+  font-family: var(--font-pixel-ui);
   font-size: 0.7rem;
   line-height: 1;
   padding: 0.14rem 0.4rem 0.2rem 0.4rem;
@@ -158,8 +177,8 @@ body {
 }
 
 .btn {
-  font-family: var(--font-pixel-title);
-  font-size: 0.72rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.74rem;
   font-weight: 700;
   line-height: 1;
   text-transform: uppercase;
@@ -185,14 +204,14 @@ body {
 
 .btn-sm {
   padding: 0.38rem 0.68rem 0.52rem 0.68rem;
-  font-size: 0.64rem;
+  font-size: 0.66rem;
   line-height: 1;
 }
 
 .btn-block {
   width: 100%;
   padding: 0.74rem 1rem 0.9rem 1rem;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   line-height: 1;
 }
 
@@ -309,14 +328,15 @@ body {
 }
 
 .control-heading {
-  font-family: var(--font-pixel-title);
-  font-size: 0.8rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.82rem;
   color: #ffffff;
   margin-bottom: 0.2rem;
 }
 
 .control-desc {
-  font-size: 0.78rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
   color: #d1d5db;
 }
 
@@ -340,8 +360,8 @@ body {
 
 .field-item label,
 .exec-label {
-  font-family: var(--font-pixel-title);
-  font-size: 0.64rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.68rem;
   color: #e5e7eb;
   text-transform: uppercase;
 }
@@ -355,8 +375,8 @@ body {
   appearance: none;
   background-color: var(--ore-sec-base);
   color: var(--text-dark);
-  font-family: var(--font-pixel-title);
-  font-size: 0.68rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
   padding: 0.52rem 2rem 0.66rem 0.7rem;
@@ -380,7 +400,7 @@ body {
 
 .ore-select-wrapper::after {
   content: "v";
-  font-family: var(--font-pixel-title);
+  font-family: var(--font-pixel-ui);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
@@ -398,9 +418,9 @@ body {
   border: 2px solid var(--ore-border-black);
   box-shadow: inset 0 3px 0 #09090b, 0 1px 0 var(--ore-border-light);
   padding: 0.52rem 0.75rem;
-  font-family: var(--font-pixel-mono);
-  font-size: 1.15rem;
-  letter-spacing: 0.02em;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
 }
 
 .ore-input:disabled {
@@ -472,8 +492,8 @@ body {
   text-align: center;
   line-height: 1;
   padding: 0.52rem 0.5rem 0.68rem 0.5rem;
-  font-family: var(--font-pixel-title);
-  font-size: 0.65rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.68rem;
   font-weight: 700;
   background-color: var(--ore-sec-base);
   color: var(--text-dark);
@@ -519,8 +539,8 @@ body {
 }
 
 .ore-slider-value {
-  font-family: var(--font-pixel-mono);
-  font-size: 1.15rem;
+  font-family: var(--font-code);
+  font-size: 1.05rem;
   color: var(--ore-yellow-gold);
   font-weight: 700;
 }
@@ -562,8 +582,8 @@ body {
 }
 
 .ore-status-tag {
-  font-family: var(--font-pixel-title);
-  font-size: 0.62rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.65rem;
   line-height: 1;
   padding: 0.18rem 0.45rem 0.24rem 0.45rem;
   background: var(--ore-bg-darkest);
@@ -579,7 +599,7 @@ body {
 
 .btn-transport {
   padding: 0.48rem 0.35rem 0.62rem 0.35rem;
-  font-size: 0.63rem;
+  font-size: 0.65rem;
   line-height: 1;
 }
 
@@ -601,14 +621,15 @@ body {
 }
 
 .metric-label {
-  font-family: var(--font-pixel-title);
-  font-size: 0.58rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.6rem;
   color: var(--text-muted);
 }
 
 .metric-value {
-  font-family: var(--font-pixel-mono);
-  font-size: 1.35rem;
+  font-family: var(--font-code);
+  font-size: 1.25rem;
+  font-weight: 700;
   color: var(--ore-yellow-gold);
   letter-spacing: 0.03em;
 }
@@ -656,8 +677,8 @@ body {
 }
 
 .ore-step-badge {
-  font-family: var(--font-pixel-title);
-  font-size: 0.66rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.68rem;
   font-weight: 700;
   line-height: 1;
   padding: 0.18rem 0.5rem 0.24rem 0.5rem;
@@ -666,14 +687,15 @@ body {
 }
 
 .ore-step-counter {
-  font-family: var(--font-pixel-title);
-  font-size: 0.68rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.7rem;
   color: #e0f2fe;
 }
 
 .banner-message-text {
+  font-family: var(--font-body);
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #ffffff;
 }
 
@@ -688,14 +710,14 @@ body {
 }
 
 .key-slot-title {
-  font-family: var(--font-pixel-title);
-  font-size: 0.6rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.62rem;
   color: var(--ore-yellow-gold);
 }
 
 .key-slot-value {
-  font-family: var(--font-pixel-mono);
-  font-size: 1.15rem;
+  font-family: var(--font-code);
+  font-size: 1.05rem;
   color: #ffffff;
 }
 
@@ -713,12 +735,14 @@ body {
 }
 
 .section-title {
-  font-family: var(--font-pixel-title);
-  font-size: 1rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
   color: #ffffff;
 }
 
 .section-subtitle {
+  font-family: var(--font-body);
   font-size: 0.82rem;
   color: var(--text-muted);
 }
@@ -730,8 +754,8 @@ body {
 }
 
 .legend-chip {
-  font-family: var(--font-pixel-title);
-  font-size: 0.6rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.64rem;
   font-weight: 700;
   line-height: 1;
   padding: 0.28rem 0.55rem 0.34rem 0.55rem;
@@ -764,8 +788,8 @@ body {
 }
 
 .card-status-ribbon {
-  font-family: var(--font-pixel-title);
-  font-size: 0.62rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.65rem;
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
@@ -909,8 +933,8 @@ body {
   padding: 0.35rem 0.65rem;
   background: #27282d;
   border-bottom: 2px solid var(--ore-border-black);
-  font-family: var(--font-pixel-mono);
-  font-size: 0.98rem;
+  font-family: var(--font-code);
+  font-size: 0.88rem;
 }
 
 .index-badge { color: var(--ore-blue-bright); }
@@ -941,8 +965,8 @@ body {
   background: #141416;
   color: #fef08a;
   border: 2px solid #eab308;
-  font-family: var(--font-pixel-title);
-  font-size: 0.58rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.6rem;
   line-height: 1;
   padding: 0.14rem 0.4rem 0.2rem 0.4rem;
 }
@@ -954,8 +978,8 @@ body {
   background: #141416;
   color: #ffffff;
   border: 1px solid var(--ore-border-mid);
-  font-family: var(--font-pixel-mono);
-  font-size: 0.95rem;
+  font-family: var(--font-code);
+  font-size: 0.85rem;
   padding: 0.05rem 0.4rem;
 }
 
@@ -968,15 +992,16 @@ body {
 }
 
 .product-title {
-  font-family: var(--font-pixel-title);
-  font-size: 0.76rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.82rem;
   color: #ffffff;
   min-height: 2.3rem;
   line-height: 1.35;
 }
 
 .creator-line {
-  font-size: 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
   color: var(--text-muted);
 }
 
@@ -988,20 +1013,21 @@ body {
 }
 
 .rating-badge {
-  font-family: var(--font-pixel-mono);
-  font-size: 1.12rem;
+  font-family: var(--font-code);
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--ore-yellow-gold);
 }
 
 .stock-badge {
-  font-family: var(--font-pixel-mono);
-  font-size: 1rem;
+  font-family: var(--font-code);
+  font-size: 0.88rem;
   color: #d1d5db;
 }
 
 .product-price {
-  font-family: var(--font-pixel-title);
-  font-size: 0.86rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.9rem;
   color: #4ade80;
   margin: 0.2rem 0;
 }
@@ -1031,7 +1057,7 @@ body {
 .cmd-icon {
   background: var(--ore-bg-darkest);
   color: var(--ore-green-bevel-light);
-  font-family: var(--font-pixel-title);
+  font-family: var(--font-pixel-ui);
   font-size: 0.75rem;
   line-height: 1;
   padding: 0.22rem 0.45rem 0.28rem 0.45rem;
@@ -1039,7 +1065,7 @@ body {
 }
 
 .terminal-title {
-  font-family: var(--font-pixel-title);
+  font-family: var(--font-pixel-ui);
   font-size: 0.76rem;
   color: #ffffff;
 }
@@ -1051,8 +1077,8 @@ body {
 }
 
 .ore-log-badge {
-  font-family: var(--font-pixel-mono);
-  font-size: 1.05rem;
+  font-family: var(--font-code);
+  font-size: 0.92rem;
   color: var(--ore-yellow-gold);
   margin-right: 0.35rem;
 }
@@ -1062,8 +1088,8 @@ body {
   overflow-y: auto;
   background: #0d0e11;
   padding: 0.85rem 1rem;
-  font-family: var(--font-pixel-mono);
-  font-size: 1.12rem;
+  font-family: var(--font-code);
+  font-size: 0.92rem;
   display: flex;
   flex-direction: column;
   gap: 0.28rem;
@@ -1136,8 +1162,9 @@ body {
 }
 
 .party-heading {
-  font-family: var(--font-pixel-title);
-  font-size: 0.85rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
   color: #ffffff;
 }
 
@@ -1148,7 +1175,7 @@ body {
   color: #ffffff;
   border: 2px solid var(--ore-border-black);
   box-shadow: inset 0 2px 0 var(--ore-border-light), inset 0 -2px 0 var(--ore-border-dark);
-  font-family: var(--font-pixel-title);
+  font-family: var(--font-pixel-ui);
   font-size: 0.8rem;
   line-height: 1;
   padding-bottom: 2px;
@@ -1178,8 +1205,8 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  font-family: var(--font-pixel-title);
-  font-size: 0.62rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
   padding: 0.3rem 0.65rem 0.36rem 0.65rem;
@@ -1207,8 +1234,8 @@ body {
 }
 
 .pointer-chain-code {
-  font-family: var(--font-pixel-mono);
-  font-size: 1.08rem;
+  font-family: var(--font-code);
+  font-size: 0.95rem;
   color: #4ade80;
   overflow-x: auto;
   white-space: nowrap;
@@ -1230,6 +1257,7 @@ body {
   border: 2px solid var(--ore-border-black);
   padding: 1.75rem 1rem;
   text-align: center;
+  font-family: var(--font-body);
   font-size: 0.82rem;
   color: var(--text-muted);
 }
@@ -1247,8 +1275,8 @@ body {
 .node-pointer-header {
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-pixel-mono);
-  font-size: 0.98rem;
+  font-family: var(--font-code);
+  font-size: 0.88rem;
   color: var(--ore-yellow-gold);
   background: var(--ore-bg-darkest);
   padding: 0.15rem 0.45rem;
@@ -1263,14 +1291,15 @@ body {
 }
 
 .node-info h4 {
-  font-family: var(--font-pixel-title);
-  font-size: 0.72rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.78rem;
   color: #ffffff;
 }
 
 .node-info p {
-  font-family: var(--font-pixel-mono);
-  font-size: 1.05rem;
+  font-family: var(--font-code);
+  font-size: 0.95rem;
+  font-weight: 700;
   color: #4ade80;
 }
 
@@ -1286,7 +1315,7 @@ body {
   background: var(--ore-sec-base);
   color: var(--text-dark);
   border: 2px solid var(--ore-border-black);
-  font-family: var(--font-pixel-title);
+  font-family: var(--font-pixel-ui);
   font-weight: 700;
   line-height: 1;
   padding-bottom: 2px;
@@ -1297,8 +1326,9 @@ body {
 }
 
 .qty-number {
-  font-family: var(--font-pixel-mono);
-  font-size: 1.15rem;
+  font-family: var(--font-code);
+  font-size: 1.05rem;
+  font-weight: 700;
   min-width: 22px;
   text-align: center;
 }
@@ -1307,8 +1337,8 @@ body {
   background: var(--ore-red-base);
   color: #ffffff;
   border: 2px solid var(--ore-border-black);
-  font-family: var(--font-pixel-title);
-  font-size: 0.6rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.65rem;
   line-height: 1;
   padding: 0.32rem 0.48rem 0.38rem 0.48rem;
   display: inline-flex;
@@ -1326,13 +1356,14 @@ body {
 .cart-summary-row {
   display: flex;
   justify-content: space-between;
+  font-family: var(--font-body);
   font-size: 0.82rem;
   margin-bottom: 0.35rem;
 }
 
 .total-price-row {
-  font-family: var(--font-pixel-title);
-  font-size: 0.85rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.9rem;
   color: #4ade80;
   margin-bottom: 0.75rem;
 }
@@ -1367,8 +1398,9 @@ body {
 }
 
 .ore-modal-title {
-  font-family: var(--font-pixel-title);
-  font-size: 0.82rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
 }
 
 .ore-modal-body {
@@ -1387,8 +1419,8 @@ body {
 
 .reward-label {
   display: block;
-  font-family: var(--font-pixel-title);
-  font-size: 0.7rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.72rem;
   color: var(--ore-yellow-gold);
   margin-bottom: 0.5rem;
 }
@@ -1408,6 +1440,7 @@ body {
 }
 
 .qris-caption {
+  font-family: var(--font-body);
   font-size: 0.76rem;
   color: var(--text-muted);
   margin-top: 0.45rem;
@@ -1420,14 +1453,15 @@ body {
 }
 
 .summary-heading {
-  font-family: var(--font-pixel-title);
-  font-size: 0.68rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.72rem;
   color: var(--ore-yellow-gold);
   margin-bottom: 0.5rem;
 }
 
 .checkout-order-list {
   list-style: none;
+  font-family: var(--font-body);
   font-size: 0.82rem;
   display: flex;
   flex-direction: column;
@@ -1445,8 +1479,8 @@ body {
   justify-content: space-between;
   padding-top: 0.55rem;
   border-top: 2px solid var(--ore-border-black);
-  font-family: var(--font-pixel-title);
-  font-size: 0.82rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.88rem;
   color: #4ade80;
 }
 
@@ -1476,23 +1510,23 @@ body {
   display: inline-block;
   background: var(--ore-green-base);
   color: #ffffff;
-  font-family: var(--font-pixel-title);
-  font-size: 0.6rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.64rem;
   line-height: 1;
   padding: 0.18rem 0.5rem 0.24rem 0.5rem;
   margin-bottom: 0.35rem;
 }
 
 .receipt-invoice-code {
-  font-family: var(--font-pixel-mono);
-  font-size: 1.65rem;
-  color: var(--ore-yellow-gold);
+  font-family: var(--font-display);
+  font-size: 1.45rem;
   letter-spacing: 0.04em;
+  color: var(--ore-yellow-gold);
 }
 
 .receipt-time-text {
-  font-family: var(--font-pixel-mono);
-  font-size: 1rem;
+  font-family: var(--font-code);
+  font-size: 0.9rem;
   color: var(--text-muted);
 }
 
@@ -1513,8 +1547,8 @@ body {
 }
 
 .receipt-qr-mini span {
-  font-family: var(--font-pixel-title);
-  font-size: 0.52rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.56rem;
   color: #141416;
   font-weight: 700;
 }
@@ -1535,8 +1569,8 @@ body {
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  font-family: var(--font-pixel-mono);
-  font-size: 1.08rem;
+  font-family: var(--font-code);
+  font-size: 0.95rem;
 }
 
 .receipt-node-addr { color: var(--ore-blue-bright); }
@@ -1565,9 +1599,9 @@ body {
   padding: 1rem;
   max-height: 430px;
   overflow: auto;
-  font-family: var(--font-pixel-mono);
-  font-size: 1.18rem;
-  line-height: 1.4;
+  font-family: var(--font-code);
+  font-size: 0.92rem;
+  line-height: 1.45;
   color: #a7f3d0;
   white-space: pre;
 }
@@ -1582,8 +1616,8 @@ body {
 
 .info-identity-card h3,
 .info-section-heading {
-  font-family: var(--font-pixel-title);
-  font-size: 0.76rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.8rem;
   color: var(--ore-yellow-gold);
   margin-bottom: 0.55rem;
 }
@@ -1592,6 +1626,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 0.4rem;
+  font-family: var(--font-body);
   font-size: 0.82rem;
 }
 
@@ -1608,14 +1643,15 @@ body {
 }
 
 .ds-info-title {
-  font-family: var(--font-pixel-title);
-  font-size: 0.7rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.74rem;
   color: #ffffff;
   display: block;
   margin-bottom: 0.2rem;
 }
 
 .ds-info-item p {
+  font-family: var(--font-body);
   font-size: 0.79rem;
   color: #d1d5db;
 }
@@ -1657,14 +1693,15 @@ body {
 }
 
 .tour-step-badge {
-  font-family: var(--font-pixel-title);
-  font-size: 0.66rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
 .tour-close-btn {
   width: 26px;
   height: 26px;
+  font-family: var(--font-pixel-ui);
   font-size: 0.68rem;
 }
 
@@ -1673,13 +1710,15 @@ body {
 }
 
 .tour-title {
-  font-family: var(--font-pixel-title);
-  font-size: 0.78rem;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  letter-spacing: 0.03em;
   color: var(--ore-yellow-gold);
   margin-bottom: 0.35rem;
 }
 
 .tour-desc {
+  font-family: var(--font-body);
   font-size: 0.82rem;
   color: #e5e7eb;
   line-height: 1.45;
@@ -1709,7 +1748,7 @@ body {
   color: #ffffff;
   border: 2px solid var(--ore-border-black);
   box-shadow: inset 0 2px 0 #60a5fa, inset 0 -3px 0 #1e3a8a;
-  font-family: var(--font-pixel-title);
-  font-size: 0.68rem;
+  font-family: var(--font-pixel-ui);
+  font-size: 0.72rem;
   padding: 0.65rem 0.95rem;
 }
