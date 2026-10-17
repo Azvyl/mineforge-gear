@@ -450,12 +450,13 @@ function syncPlaybackAndModeUI() {
     btnStepPauseResume.disabled = true;
     btnStepNext.disabled = true;
     btnStepStop.disabled = true;
-    btnStepPauseResume.textContent = 'PAUSE';
-    btnStepStop.textContent = 'SKIP >>';
+    btnStepPauseResume.textContent = 'JEDA';
+    btnStepStop.textContent = 'LEWATI >>';
     return;
   }
 
   const isAtFinalStep = currentStepIndex >= stepHistory.length - 1;
+
   btnStepPrev.disabled = currentStepIndex <= 0;
   btnStepNext.disabled = isAtFinalStep;
   btnStepPauseResume.disabled = false;
@@ -465,8 +466,8 @@ function syncPlaybackAndModeUI() {
     btnStepPauseResume.textContent = 'ULANGI';
     btnStepStop.textContent = 'SELESAI';
   } else {
-    btnStepPauseResume.textContent = isPaused ? 'CONTINUE' : 'PAUSE';
-    btnStepStop.textContent = 'SKIP >>';
+    btnStepPauseResume.textContent = isPaused ? 'LANJUT' : 'JEDA';
+    btnStepStop.textContent = 'LEWATI >>';
   }
 }
 
@@ -604,18 +605,15 @@ function renderCatalogGrid(items, stepContext = null, animateMovement = true) {
       } else if (stepType === 'SHIFT') {
         if (idx === activeIdx) {
           card.classList.add('state-shift-right');
-          ribbonText = `➡ DIGESER KE KANAN [${compareIdx} → ${idx}]`;
+          ribbonText = `SHIFT: [${compareIdx}] -> [${idx}]`;
         } else if (idx === compareIdx) {
           card.classList.add('state-key-slot');
-          ribbonText = `⌂ SLOT KOSONG KEY [${idx}]`;
+          ribbonText = `SLOT KOSONG KEY [${idx}]`;
         }
       } else if (stepType === 'SWAP') {
-        if (idx === activeIdx) {
-          card.classList.add('state-swap-left');
-          ribbonText = `⚡ DITUKAR (SWAP [${activeIdx}] ⇄ [${compareIdx}])`;
-        } else if (idx === compareIdx) {
-          card.classList.add('state-swap-right');
-          ribbonText = `⚡ DITUKAR (SWAP [${compareIdx}] ⇄ [${activeIdx}])`;
+        if (idx === activeIdx || idx === compareIdx) {
+          card.classList.add(idx === activeIdx ? 'state-swap-left' : 'state-swap-right');
+          ribbonText = `SWAP: [${activeIdx}] <-> [${compareIdx}]`;
         }
       } else if (stepType === 'INSERT') {
         if (idx === activeIdx) {
@@ -1014,6 +1012,8 @@ function toggleCartDrawer(open) {
 function openCheckoutModal() {
   const items = cartList.toArray();
   if (items.length === 0) return;
+
+  qrisImageEl.src = generateDummyQRISSVG();
 
   checkoutOrderListEl.innerHTML = '';
   let grandTotal = 0;

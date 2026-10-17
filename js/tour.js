@@ -68,7 +68,7 @@ export class GuidedTour {
     this.currentIndex = index;
     const step = this.steps[index];
 
-    if ( typeof step.beforeEnter === 'function') {
+    if (typeof step.beforeEnter === 'function') {
       step.beforeEnter();
     }
 
@@ -122,7 +122,6 @@ export class GuidedTour {
 
     const rect = targetEl.getBoundingClientRect();
     const pad = 6;
-
     const top = Math.max(4, rect.top - pad);
     const left = Math.max(4, rect.left - pad);
     const width = Math.min(window.innerWidth - 8, rect.width + pad * 2);
@@ -137,16 +136,26 @@ export class GuidedTour {
     this.tooltipEl.style.width = `${tooltipWidth}px`;
     const tooltipRect = this.tooltipEl.getBoundingClientRect();
 
-    let tooltipTop = rect.bottom + 14;
-    if (tooltipTop + tooltipRect.height > window.innerHeight - 12) {
-      tooltipTop = Math.max(12, rect.top - tooltipRect.height - 14);
-    }
+    const isCartTarget = step.selector === '#cartDrawer' || rect.left > window.innerWidth / 2;
 
-    let tooltipLeft = rect.left;
-    if (tooltipLeft + tooltipWidth > window.innerWidth - 12) {
-      tooltipLeft = window.innerWidth - tooltipWidth - 12;
+    let tooltipTop;
+    let tooltipLeft;
+
+    if (isCartTarget && rect.left - tooltipWidth - 16 >= 12) {
+      tooltipLeft = rect.left - tooltipWidth - 16;
+      tooltipTop = Math.max(16, Math.min(rect.top + 24, window.innerHeight - tooltipRect.height - 16));
+    } else {
+      tooltipTop = rect.bottom + 14;
+      if (tooltipTop + tooltipRect.height > window.innerHeight - 12) {
+        tooltipTop = Math.max(12, rect.top - tooltipRect.height - 14);
+      }
+
+      tooltipLeft = rect.left;
+      if (tooltipLeft + tooltipWidth > window.innerWidth - 12) {
+        tooltipLeft = window.innerWidth - tooltipWidth - 12;
+      }
+      tooltipLeft = Math.max(12, tooltipLeft);
     }
-    tooltipLeft = Math.max(12, tooltipLeft);
 
     this.tooltipEl.style.top = `${tooltipTop}px`;
     this.tooltipEl.style.left = `${tooltipLeft}px`;

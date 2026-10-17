@@ -435,7 +435,7 @@ body {
 
 .ore-execution-bar {
   position: fixed;
-  bottom: 14px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
   width: min(1260px, calc(100% - 2rem));
@@ -447,17 +447,17 @@ body {
     0 8px 32px rgba(0, 0, 0, 0.75),
     inset 0 2px 0 var(--ore-border-light), 
     inset 0 -2px 0 var(--ore-border-dark);
-  padding: 0.75rem 1rem;
+  padding: 0.45rem 0.85rem;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
+  gap: 0.65rem;
   align-items: center;
 }
 
 .exec-block {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.25rem;
   transition: opacity 0.2s ease;
 }
 
@@ -549,7 +549,7 @@ body {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 14px;
+  height: 10px;
   background: var(--ore-bg-darkest);
   border: 2px solid var(--ore-border-black);
   box-shadow: inset 0 2px 0 #000000;
@@ -564,8 +564,8 @@ body {
 .ore-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 22px;
-  height: 26px;
+  width: 18px;
+  height: 20px;
   background: var(--ore-sec-base);
   border: 2px solid var(--ore-border-black);
   box-shadow: inset 0 2px 0 #ffffff, inset 0 -3px 0 #7a7b7f;
@@ -573,8 +573,8 @@ body {
 }
 
 .ore-slider::-moz-range-thumb {
-  width: 22px;
-  height: 26px;
+  width: 18px;
+  height: 20px;
   background: var(--ore-sec-base);
   border: 2px solid var(--ore-border-black);
   box-shadow: inset 0 2px 0 #ffffff, inset 0 -3px 0 #7a7b7f;
@@ -594,12 +594,12 @@ body {
 .transport-buttons-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .btn-transport {
-  padding: 0.48rem 0.35rem 0.62rem 0.35rem;
-  font-size: 0.65rem;
+  padding: 0.38rem 0.25rem 0.48rem 0.25rem;
+  font-size: 0.64rem;
   line-height: 1;
 }
 
@@ -797,6 +797,9 @@ body {
   background: var(--ore-bg-darkest);
   color: var(--text-muted);
   border-bottom: 2px solid var(--ore-border-black);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .product-card.state-key {
@@ -1233,12 +1236,23 @@ body {
   padding: 0.65rem;
 }
 
+.pointer-chain-code::-webkit-scrollbar {
+  height: 5px;
+}
+.pointer-chain-code::-webkit-scrollbar-track {
+  background: #141416;
+}
+.pointer-chain-code::-webkit-scrollbar-thumb {
+  background: #5a5b62;
+}
 .pointer-chain-code {
   font-family: var(--font-code);
   font-size: 0.95rem;
   color: #4ade80;
   overflow-x: auto;
   white-space: nowrap;
+  scrollbar-width: thin;
+  scrollbar-color: #5a5b62 #141416;
 }
 
 .cart-items-list {
