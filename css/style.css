@@ -603,6 +603,48 @@ body {
   line-height: 1;
 }
 
+.shortcuts-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tag-shortcut {
+  color: var(--ore-blue-bright);
+}
+
+.shortcuts-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.shortcut-pill {
+  font-family: var(--font-pixel-ui);
+  font-size: 0.62rem;
+  color: var(--text-light);
+  background: var(--ore-bg-darkest);
+  border: 1px solid var(--ore-border-black);
+  padding: 0.2rem 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.shortcut-pill kbd {
+  font-family: var(--font-code);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ore-yellow-gold);
+  background: #18181b;
+  border: 1px solid #3f3f46;
+  border-bottom: 2px solid #27272a;
+  padding: 0.05rem 0.22rem;
+  border-radius: 2px;
+}
+
 .ore-metrics-bar {
   margin-top: 0.9rem;
   display: grid;
@@ -933,15 +975,36 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.35rem 0.65rem;
-  background: #27282d;
+  padding: 0.3rem 0.5rem;
+  background: #232428;
   border-bottom: 2px solid var(--ore-border-black);
   font-family: var(--font-code);
-  font-size: 0.88rem;
+  font-size: 0.76rem;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.slot-badge {
+  color: #38bdf8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.slot-badge .index-badge {
+  color: #e0f2fe;
+  font-weight: 700;
 }
 
 .index-badge { color: var(--ore-blue-bright); }
-.memory-badge { color: var(--ore-yellow-gold); }
+.memory-badge {
+  color: var(--ore-yellow-gold);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
 
 .card-image-box {
   height: 148px;
@@ -1771,6 +1834,27 @@ body {
   font-family: var(--font-body);
   font-size: 0.79rem;
   color: #d1d5db;
+}
+
+.info-memory-theory-card {
+  border-left-color: var(--ore-blue-bright);
+  margin-top: 1rem;
+}
+
+.theory-intro {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-light);
+  margin-bottom: 0.65rem;
+  line-height: 1.45;
+}
+
+.theory-key {
+  font-family: var(--font-pixel-ui);
+  font-size: 0.72rem;
+  color: #38bdf8;
+  display: block;
+  margin-bottom: 0.25rem;
 }
 
 .ore-tour-overlay {

@@ -60,6 +60,7 @@
               <label for="sortProperty">Properti Urut</label>
               <div class="ore-select-wrapper">
                 <select id="sortProperty" class="ore-select">
+                  <option value="name">Nama Produk (A-Z)</option>
                   <option value="price">Harga (Price)</option>
                   <option value="rating">Rating Bintang</option>
                   <option value="id">ID Produk</option>
@@ -184,6 +185,19 @@
             </button>
           </div>
         </div>
+
+        <div id="tourShortcutsBadge" class="exec-block exec-shortcuts-block" aria-label="Petunjuk Tombol Cepat Keyboard">
+          <div class="shortcuts-header-row">
+            <span class="exec-label">SHORTCUT KEYBOARD</span>
+            <span class="ore-status-tag tag-shortcut">AKSES CEPAT</span>
+          </div>
+          <div class="shortcuts-badge-row">
+            <span class="shortcut-pill" title="Jeda atau Lanjutkan Animasi"><kbd>[Space]</kbd> Jeda / Lanjut</span>
+            <span class="shortcut-pill" title="Langkah Sebelumnya"><kbd>[&larr;]</kbd> Prev</span>
+            <span class="shortcut-pill" title="Langkah Berikutnya"><kbd>[&rarr;]</kbd> Next</span>
+            <span class="shortcut-pill" title="Tutup Modal atau Keranjang Belanja"><kbd>[Esc]</kbd> Tutup</span>
+          </div>
+        </div>
       </div>
 
       <div class="ore-metrics-bar" aria-label="Statistik Operasi Algoritma">
@@ -228,7 +242,7 @@
         <div>
           <h2 class="section-title">KATALOG PRODUK</h2>
           <p class="section-subtitle">
-            Setiap kartu merepresentasikan <code>Struct Product</code> beserta alamat memori statisnya.
+            Setiap kartu merepresentasikan slot fisik kontigu Array (<code>Slot Addr: &amp;arr[i]</code>) yang menyimpan pointer referensi ke <code>Struct Product</code> di memori Heap (<code>Obj Ptr</code>).
           </p>
         </div>
 
@@ -445,11 +459,11 @@
         <div class="ds-info-grid">
           <div class="ds-info-item">
             <span class="ds-info-title">1. Array In-Memory (js/data.js &amp; js/repository.js)</span>
-            <p>Menyimpan 10 elemen katalog produk di memori utama dengan pemisahan konstanta data master (`MASTER_PRODUCTS_DATA`) dan kloning objek imutabel.</p>
+            <p>Menyimpan 10 elemen katalog produk di memori utama dengan pemisahan konstanta data master (`MASTER_PRODUCTS_DATA`) dan kloning objek. Membedakan secara nyata antara alamat slot fisik kontigu (<code>Slot Addr: &amp;arr[i]</code>) dan pointer objek.</p>
           </div>
           <div class="ds-info-item">
             <span class="ds-info-title">2. Struct / Class Entitas (js/struct.js)</span>
-            <p>Representasi struktur data heterogen melalui <code>class Product</code> (ID, nama, kategori, harga, rating, stok, alamat memori) serta <code>class CartNode</code>.</p>
+            <p>Representasi struktur data heterogen melalui <code>class Product</code> (ID, nama, kategori, harga, rating, stok, pointer memori heap) serta simpul rantai <code>class CartNode</code>.</p>
           </div>
           <div class="ds-info-item">
             <span class="ds-info-title">3. Pointer / Singly Linked List (js/struct.js)</span>
@@ -457,11 +471,28 @@
           </div>
           <div class="ds-info-item">
             <span class="ds-info-title">4. Sorting + Step Log (js/algorithms.js)</span>
-            <p>Menggunakan algoritma murni <strong>Insertion Sort</strong> dan <strong>Selection Sort</strong> berbasis Generator (<code>function*</code>) lengkap dengan penghitungan metrik perbandingan &amp; pergeseran/pertukaran.</p>
+            <p>Menggunakan algoritma murni <strong>Insertion Sort</strong> dan <strong>Selection Sort</strong> berbasis Generator (<code>function*</code>) lengkap dengan penghitungan metrik perbandingan &amp; pergeseran/pertukaran, serta mendukung pengurutan alfabetis Nama Produk (A-Z).</p>
           </div>
           <div class="ds-info-item">
             <span class="ds-info-title">5. Searching + Step Log (js/algorithms.js)</span>
-            <p>Menggunakan algoritma murni <strong>Linear Search</strong> dan <strong>Binary Search</strong> (dengan validasi keterurutan Array) berbasis Generator (<code>function*</code>).</p>
+            <p>Menggunakan algoritma murni <strong>Linear Search</strong> dan <strong>Binary Search</strong> (dengan validasi keterurutan Array, toleransi floating-point rating epsilon 1e-5, serta ekspansi deteksi duplikat identik) berbasis Generator (<code>function*</code>).</p>
+          </div>
+        </div>
+
+        <div class="info-identity-card info-memory-theory-card">
+          <h3>PENJELASAN TEORITIS: ALAMAT SLOT ARRAY VS POINTER HEAP OBJEK</h3>
+          <p class="theory-intro">
+            Dalam arsitektur sistem komputer tingkat rendah (seperti implementasi bahasa C), pemisahan memori fisik array dan objek sangat penting:
+          </p>
+          <div class="identity-grid">
+            <div>
+              <span class="theory-key">Slot Array Address (&amp;arr[i]):</span>
+              <p>Alamat memori fisik kontigu tempat slot array dialokasikan secara statis di memori (misal <code>&amp;arr[0] = 0x7FFE00</code>, <code>&amp;arr[1] = 0x7FFE20</code>, dst.). Alamat ini <strong>statis dan tidak pernah berpindah</strong> saat algoritma sorting dijalankan karena merupakan lokasi fisik sel array itu sendiri.</p>
+            </div>
+            <div>
+              <span class="theory-key">Object Memory Pointer (Obj Ptr):</span>
+              <p>Alamat instansiasi struct objek di memori Heap dinamis (misal <code>0x7FFE01</code>). Ketika terjadi operasi pertukaran (SWAP) atau pergeseran (SHIFT), <strong>yang berpindah antar-slot hanyalah pointer referensi objek</strong>, sedangkan alamat slot fisik array tetap tidak berubah.</p>
+            </div>
           </div>
         </div>
       </div>

@@ -2,8 +2,47 @@
  * Modul Tur Panduan Interaktif (Guided Tour) - Vanilla JS
  * Menampilkan sorotan (bounding box highlight) bertema Bedrock Ore UI
  */
+
+export const DEFAULT_TOUR_STEPS = [
+  {
+    selector: '#tourSortingPanel',
+    title: '1. PANEL PENGURUTAN (SORTING)',
+    description: 'Pilih algoritma Insertion Sort atau Selection Sort, tentukan properti (Harga, Rating, ID, atau Nama Produk) beserta arah urutannya, lalu klik "JALANKAN SORTING".'
+  },
+  {
+    selector: '#tourSearchingPanel',
+    title: '2. PANEL PENCARIAN (SEARCHING)',
+    description: 'Gunakan Linear Search untuk pencarian sekuensial bebas, atau Binary Search untuk pencarian cepat (pastikan katalog sudah diurutkan terlebih dahulu).'
+  },
+  {
+    selector: '#tourExecutionBar',
+    title: '3. KONTROL GENERATOR & KECEPATAN',
+    description: 'Atur jeda kecepatan animasi secara real-time, atau gunakan tombol << PREV, PAUSE/CONTINUE, NEXT >>, dan LEWATI >> untuk menganalisis langkah algoritma satu per satu.'
+  },
+  {
+    selector: '#tourShortcutsBadge',
+    title: '4. TOMBOL CEPAT (KEYBOARD SHORTCUTS)',
+    description: 'Kendalikan simulasi secara cepat menggunakan keyboard: [Space] untuk Jeda/Lanjut, [←] untuk Langkah Sebelumnya, [→] untuk Langkah Berikutnya, dan [Esc] untuk Menutup Modal atau Keranjang.'
+  },
+  {
+    selector: '#tourCatalogSection',
+    title: '5. ETALASE KATALOG & DUALISASI MEMORI',
+    description: 'Setiap kartu produk menampilkan alamat fisik slot memori array yang statis (Slot Addr: 0x7FFE...) dan alamat pointer objek struct di memori heap (Obj Ptr: 0x7FFE...).'
+  },
+  {
+    selector: '#tourTerminalSection',
+    title: '6. TERMINAL EKSEKUSI LOG',
+    description: 'Mencatat setiap operasi perbandingan (COMPARE), pergeseran (SHIFT), pertukaran (SWAP), penyisipan (INSERT), dan pencocokan data secara berurutan.'
+  },
+  {
+    selector: '#cartDrawer',
+    title: '7. KERANJANG SINGLY LINKED LIST',
+    description: 'Memvisualisasikan rantai pointer objek nyata di Heap Memory ([Head] -> Node -> [Tail] NULL) setiap kali Anda menambah atau menghapus barang belanjaan.'
+  }
+];
+
 export class GuidedTour {
-  constructor(steps, callbacks = {}) {
+  constructor(steps = DEFAULT_TOUR_STEPS, callbacks = {}) {
     this.steps = steps;
     this.callbacks = callbacks;
     this.currentIndex = 0;
@@ -15,6 +54,26 @@ export class GuidedTour {
 
     this.boundReposition = () => {
       if (this.isActive) this.updatePosition();
+    };
+
+    this.boundKeyHandler = (e) => {
+      if (!this.isActive) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        this.stop();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (this.currentIndex < this.steps.length - 1) {
+          this.showStep(this.currentIndex + 1);
+        } else {
+          this.stop();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (this.currentIndex > 0) {
+          this.showStep(this.currentIndex - 1);
+        }
+      }
     };
   }
 
@@ -45,12 +104,14 @@ export class GuidedTour {
     this.isActive = true;
     this.currentIndex = 0;
     this.overlayEl.classList.remove('hidden');
+    window.addEventListener('keydown', this.boundKeyHandler);
     this.showStep(0);
   }
 
   stop() {
     if (!this.isActive) return;
     this.isActive = false;
+    window.removeEventListener('keydown', this.boundKeyHandler);
     if (this.overlayEl) {
       this.overlayEl.classList.add('hidden');
     }

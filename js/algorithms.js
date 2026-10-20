@@ -1,4 +1,34 @@
 /**
+ * Helper perbandingan nilai generik untuk Number, Float (Rating), dan String (Nama)
+ * Mendukung presisi floating point epsilon (1e-5) dan perbandingan String localeCompare
+ * Mengembalikan:
+ *   < 0 jika a < b
+ *   > 0 jika a > b
+ *   0 jika a == b
+ */
+export function comparePropertyValues(a, b, property) {
+  if (property === 'rating') {
+    const numA = Number(a);
+    const numB = Number(b);
+    if (Math.abs(numA - numB) < 1e-5) return 0;
+    return numA < numB ? -1 : 1;
+  }
+  if (property === 'name') {
+    return String(a).localeCompare(String(b), 'id', { sensitivity: 'base' });
+  }
+  const numA = Number(a);
+  const numB = Number(b);
+  if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+    if (numA < numB) return -1;
+    if (numA > numB) return 1;
+    return 0;
+  }
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+/**
  * Helper pengecekan apakah array sudah terurut berdasarkan properti tertentu
  * Digunakan sebagai prasyarat mutlak sebelum menjalankan Binary Search
  */
@@ -11,10 +41,11 @@ export function detectSortOrder(items, property) {
   for (let i = 0; i < items.length - 1; i++) {
     const curr = items[i][property];
     const next = items[i + 1][property];
+    const cmp = comparePropertyValues(curr, next, property);
 
-    if (curr < next) {
+    if (cmp < 0) {
       hasAsc = true;
-    } else if (curr > next) {
+    } else if (cmp > 0) {
       hasDesc = true;
     }
 
@@ -54,7 +85,9 @@ export function* insertionSort(items, property, direction = 'asc') {
     };
 
     while (j >= 0 && (
-      direction === 'asc' ? arr[j][property] > key[property] : arr[j][property] < key[property]
+      direction === 'asc'
+        ? comparePropertyValues(arr[j][property], key[property], property) > 0
+        : comparePropertyValues(arr[j][property], key[property], property) < 0
     )) {
       const shiftedItem = arr[j];
       arr[j + 1] = shiftedItem;
@@ -133,9 +166,8 @@ export function* selectionSort(items, property, direction = 'asc') {
         logMessage: `[SELECTION][PASS ${i + 1}][COMPARE] Membandingkan kandidat ${targetLabel} [${targetIdx}] "${arr[targetIdx].name}" (${arr[targetIdx][property]}) dengan [${j}] "${arr[j].name}" (${arr[j][property]})`
       };
 
-      const isBetter = direction === 'asc'
-        ? arr[j][property] < arr[targetIdx][property]
-        : arr[j][property] > arr[targetIdx][property];
+      const cmp = comparePropertyValues(arr[j][property], arr[targetIdx][property], property);
+      const isBetter = direction === 'asc' ? cmp < 0 : cmp > 0;
 
       if (isBetter) {
         targetIdx = j;
@@ -243,6 +275,7 @@ export function* linearSearch(items, keyword) {
 /**
  * 4. Algoritma Searching: Binary Search berbasis Generator
  * Validasi wajib: Memeriksa apakah array telah terurut berdasarkan `property`
+ * Mendukung evaluasi floating-point rating dengan presisi epsilon & ekspansi duplikat identik
  */
 export function* binarySearch(items, keyword, property = 'id') {
   const sortOrder = detectSortOrder(items, property);
@@ -259,34 +292,49 @@ export function* binarySearch(items, keyword, property = 'id') {
   }
 
   const strKeyword = String(keyword ?? '').trim();
-  let sanitized = '';
+  let targetVal;
 
-  if (property === 'price' || property === 'id') {
-    sanitized = strKeyword.replace(/\D/g, '');
-  } else if (property === 'rating') {
-    const withDot = strKeyword.replace(/,/g, '.');
-    const cleanChars = withDot.replace(/[^0-9.]/g, '');
-    const parts = cleanChars.split('.');
-    if (parts.length > 1) {
-      sanitized = parts[0] + '.' + parts.slice(1).join('');
-    } else {
-      sanitized = parts[0];
+  if (property === 'name') {
+    targetVal = strKeyword;
+    if (!targetVal) {
+      yield {
+        type: 'NOT_SORTED',
+        indices: { active: null, compare: null },
+        metrics: { comparisons: 0, shiftsOrSwaps: 0 },
+        arraySnapshot: items.map(item => ({ ...item })),
+        logMessage: `[BINARY-SEARCH][PERINGATAN] Masukkan nama produk yang valid untuk Binary Search!`
+      };
+      return;
     }
   } else {
-    sanitized = strKeyword.replace(/\D/g, '');
-  }
+    let sanitized = '';
+    if (property === 'price' || property === 'id') {
+      sanitized = strKeyword.replace(/\D/g, '');
+    } else if (property === 'rating') {
+      const withDot = strKeyword.replace(/,/g, '.');
+      const cleanChars = withDot.replace(/[^0-9.]/g, '');
+      const parts = cleanChars.split('.');
+      if (parts.length > 1) {
+        sanitized = parts[0] + '.' + parts.slice(1).join('');
+      } else {
+        sanitized = parts[0];
+      }
+    } else {
+      sanitized = strKeyword.replace(/\D/g, '');
+    }
 
-  const targetVal = Number(sanitized);
+    targetVal = Number(sanitized);
 
-  if (!sanitized || sanitized === '.' || Number.isNaN(targetVal)) {
-    yield {
-      type: 'NOT_SORTED',
-      indices: { active: null, compare: null },
-      metrics: { comparisons: 0, shiftsOrSwaps: 0 },
-      arraySnapshot: items.map(item => ({ ...item })),
-      logMessage: `[BINARY-SEARCH][PERINGATAN] Binary Search pada properti "${property.toUpperCase()}" membutuhkan input angka numerik yang valid (contoh ID: 205, Harga: 185000 / 185.000, atau Rating: 4.8 / 4,8).`
-    };
-    return;
+    if (!sanitized || sanitized === '.' || Number.isNaN(targetVal)) {
+      yield {
+        type: 'NOT_SORTED',
+        indices: { active: null, compare: null },
+        metrics: { comparisons: 0, shiftsOrSwaps: 0 },
+        arraySnapshot: items.map(item => ({ ...item })),
+        logMessage: `[BINARY-SEARCH][PERINGATAN] Binary Search pada properti "${property.toUpperCase()}" membutuhkan input angka numerik yang valid (contoh ID: 205, Harga: 185000 / 185.000, atau Rating: 4.8 / 4,8).`
+      };
+      return;
+    }
   }
 
   let low = 0;
@@ -316,30 +364,55 @@ export function* binarySearch(items, keyword, property = 'id') {
       logMessage: `[BINARY-SEARCH][STEP ${stepNum}][CHECKING] Rentang [${low}..${high}] -> Menguji titik tengah Mid [${mid}] "${items[mid].name}" (${property}: ${midVal})`
     };
 
-    const isMatch = property === 'rating'
-      ? Math.abs(midVal - targetVal) < 0.0001
-      : midVal === targetVal;
+    const cmp = comparePropertyValues(midVal, targetVal, property);
 
-    if (isMatch) {
+    if (cmp === 0) {
+      const matchedIndices = [mid];
+
+      let left = mid - 1;
+      while (left >= 0 && comparePropertyValues(items[left][property], targetVal, property) === 0) {
+        matchedIndices.unshift(left);
+        left--;
+      }
+
+      let right = mid + 1;
+      while (right < items.length && comparePropertyValues(items[right][property], targetVal, property) === 0) {
+        matchedIndices.push(right);
+        right++;
+      }
+
       yield {
         type: 'FOUND',
-        indices: { active: mid, compare: null, low, high },
+        indices: { active: mid, compare: null, low, high, matchedIndices },
         metrics: { comparisons, shiftsOrSwaps: 0 },
         arraySnapshot: items.map(item => ({ ...item })),
-        logMessage: `[BINARY-SEARCH][STEP ${stepNum}][FOUND] Target ${property.toUpperCase()} = ${targetVal} ditemukan tepat pada Mid Indeks [${mid}]: "${items[mid].name}"!`
+        logMessage: `[BINARY-SEARCH][STEP ${stepNum}][FOUND] Target ${property.toUpperCase()} = ${targetVal} ditemukan pada Mid Indeks [${mid}]: "${items[mid].name}"!`
       };
+
+      for (const matchIdx of matchedIndices) {
+        if (matchIdx !== mid) {
+          comparisons++;
+          yield {
+            type: 'FOUND',
+            indices: { active: matchIdx, compare: mid, low, high, matchedIndices },
+            metrics: { comparisons, shiftsOrSwaps: 0 },
+            arraySnapshot: items.map(item => ({ ...item })),
+            logMessage: `[BINARY-SEARCH][EKSPANSI][FOUND] Ditemukan kecocokan duplikat ${property.toUpperCase()} = ${targetVal} pada Indeks [${matchIdx}]: "${items[matchIdx].name}"!`
+          };
+        }
+      }
 
       yield {
         type: 'COMPLETE',
-        indices: { active: mid, compare: null, low, high },
+        indices: { active: mid, compare: null, low, high, matchedIndices },
         metrics: { comparisons, shiftsOrSwaps: 0 },
         arraySnapshot: items.map(item => ({ ...item })),
-        logMessage: `[BINARY-SEARCH][COMPLETE] Pencarian biner selesai dengan sangat efisien dalam ${comparisons} perbandingan.`
+        logMessage: `[BINARY-SEARCH][COMPLETE] Pencarian biner selesai. Ditemukan total ${matchedIndices.length} produk dengan ${property.toUpperCase()} = ${targetVal} (Indeks: [${matchedIndices.join(', ')}]) dalam ${comparisons} perbandingan.`
       };
       return;
     }
 
-    const goRight = sortOrder === 'asc' ? midVal < targetVal : midVal > targetVal;
+    const goRight = sortOrder === 'asc' ? cmp < 0 : cmp > 0;
     if (goRight) {
       low = mid + 1;
     } else {
@@ -349,7 +422,7 @@ export function* binarySearch(items, keyword, property = 'id') {
 
   yield {
     type: 'COMPLETE',
-    indices: { active: null, compare: null },
+    indices: { active: null, compare: null, matchedIndices: [] },
     metrics: { comparisons, shiftsOrSwaps: 0 },
     arraySnapshot: items.map(item => ({ ...item })),
     logMessage: `[BINARY-SEARCH][COMPLETE] Target ${property.toUpperCase()} = ${targetVal} tidak ditemukan setelah ${comparisons} perbandingan.`

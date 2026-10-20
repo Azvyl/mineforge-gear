@@ -120,37 +120,61 @@ const CODE_SNIPPETS = {
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * Representasi entitas heterogen dengan Struct di memori kontigu
+ */
 typedef struct {
-    int id;
-    char name[64];
-    char category[32];
-    double price;
-    float rating;
-    int stock;
-    char simulatedAddress[16];
+    int id;                      // Primary Key (4 bytes)
+    char name[64];               // String nama produk (64 bytes)
+    char category[32];           // Kategori produk (32 bytes)
+    double price;                // Harga dalam IDR (8 bytes)
+    float rating;                // Rating bintang 1.0 - 5.0 (4 bytes)
+    int stock;                   // Kuantitas stok produk (4 bytes)
+    char simulatedAddress[16];   // Simulasi alamat pointer memori heap
 } Product;
 
+/**
+ * Simpul elemen Singly Linked List berbasis Heap Memory
+ * Kompleksitas Ruang: O(1) per simpul baru yang dialokasikan
+ */
 typedef struct CartNode {
-    Product product;
-    int quantity;
-    struct CartNode* next; // Pointer ke simpul berikutnya di Heap Memory
+    Product product;             // Salinan / data entitas produk
+    int quantity;                // Kuantitas belanja
+    struct CartNode* next;       // Pointer menuju simpul berikutnya di Heap
 } CartNode;
 
+/**
+ * Menambahkan node baru ke akhir Linked List (Traversal O(n))
+ * Menggunakan alokasi memori dinamis 'malloc' dan dereferensi pointer '->'
+ * @param headRef Pointer ganda ke head list
+ * @param item Struct Product yang dibeli
+ * @param qty Jumlah kuantitas barang
+ */
 void addCartNode(CartNode** headRef, Product item, int qty) {
+    // 1. Alokasi memori dinamis di Heap menggunakan malloc()
     CartNode* newNode = (CartNode*)malloc(sizeof(CartNode));
+    if (newNode == NULL) {
+        printf("Error: Gagal mengalokasikan memori heap!\\n");
+        return;
+    }
+
+    // 2. Dereferensi pointer '->' untuk mengisi nilai properti simpul
     newNode->product = item;
     newNode->quantity = qty;
     newNode->next = NULL;
 
+    // 3. Jika linked list masih kosong (*headRef == NULL), simpul baru menjadi Head
     if (*headRef == NULL) {
         *headRef = newNode;
         return;
     }
+
+    // 4. Traversal linier O(n) mencari simpul akhir (tail)
     CartNode* current = *headRef;
     while (current->next != NULL) {
-        current = current->next;
+        current = current->next; // Pindah ke simpul berikutnya
     }
-    current->next = newNode;
+    current->next = newNode;     // Sambungkan pointer next tail ke simpul baru
 }`,
     js: `// [JAVASCRIPT ES6] Struct Product & Singly Linked List (js/struct.js)
 export class Product {
@@ -182,7 +206,37 @@ export class CartLinkedList {
 }`
   },
   insertion_sort: {
-    c: `// [BAHASA C] Algoritma Insertion Sort In-Place pada Array of Struct
+    c: `// [BAHASA C] Insertion Sort In-Place: Mendukung Numerik & String (strcmp)
+#include <stdio.h>
+#include <string.h>
+
+/**
+ * Insertion Sort berdasarkan Nama Produk (String Alfabetis A-Z)
+ * Kompleksitas Waktu:
+ *   - Best Case  : O(n) saat array sudah terurut
+ *   - Worst Case : O(n^2) saat array terurut terbalik
+ * Kompleksitas Ruang: O(1) Auxiliary (In-Place Sorting)
+ */
+void insertionSortByName(Product arr[], int n, int ascending) {
+    for (int i = 1; i < n; i++) {
+        Product key = arr[i]; // Memegang elemen aktif sebagai Key
+        int j = i - 1;
+
+        // Perbandingan string leksikografis menggunakan strcmp()
+        // strcmp(a, b) > 0 berarti string a lebih besar dari b (A-Z)
+        while (j >= 0 && (ascending ? (strcmp(arr[j].name, key.name) > 0)
+                                    : (strcmp(arr[j].name, key.name) < 0))) {
+            arr[j + 1] = arr[j]; // Menggeser elemen ke kanan (SHIFT)
+            j = j - 1;
+        }
+        arr[j + 1] = key; // Menyisipkan Key pada slot yang tepat (INSERT)
+    }
+}
+
+/**
+ * Insertion Sort berdasarkan Harga (Numerik double)
+ * Kompleksitas Waktu: O(n^2) rata-rata, O(n) terbaik
+ */
 void insertionSortByPrice(Product arr[], int n, int ascending) {
     for (int i = 1; i < n; i++) {
         Product key = arr[i];
@@ -190,10 +244,10 @@ void insertionSortByPrice(Product arr[], int n, int ascending) {
 
         while (j >= 0 && (ascending ? (arr[j].price > key.price)
                                     : (arr[j].price < key.price))) {
-            arr[j + 1] = arr[j]; // Geser elemen ke kanan (SHIFT)
+            arr[j + 1] = arr[j]; // Geser elemen ke kanan
             j = j - 1;
         }
-        arr[j + 1] = key; // Sisipkan Key pada posisi yang tepat (INSERT)
+        arr[j + 1] = key; // Sisipkan Key
     }
 }`,
     js: `// [JAVASCRIPT ES6] Insertion Sort Generator (js/algorithms.js)
@@ -204,9 +258,10 @@ export function* insertionSort(items, property, direction = 'asc') {
     let j = i - 1;
     yield { type: 'COMPARE', indices: { active: i, compare: j } };
 
+    // Mendukung perbandingan angka maupun nama (localeCompare / string)
     while (j >= 0 && (direction === 'asc'
-      ? arr[j][property] > key[property]
-      : arr[j][property] < key[property])) {
+      ? comparePropertyValues(arr[j][property], key[property], property) > 0
+      : comparePropertyValues(arr[j][property], key[property], property) < 0)) {
       arr[j + 1] = arr[j];
       yield { type: 'SHIFT', indices: { active: j + 1, compare: j } };
       j--;
@@ -217,7 +272,41 @@ export function* insertionSort(items, property, direction = 'asc') {
 }`
   },
   selection_sort: {
-    c: `// [BAHASA C] Algoritma Selection Sort pada Array of Struct
+    c: `// [BAHASA C] Selection Sort In-Place: Mendukung Numerik & String (strcmp)
+#include <stdio.h>
+#include <string.h>
+
+/**
+ * Selection Sort berdasarkan Nama Produk (Leksikografis A-Z via strcmp)
+ * Kompleksitas Waktu:
+ *   - Best, Average, Worst Case: O(n^2) karena selalu mengevaluasi n*(n-1)/2 perbandingan
+ * Kompleksitas Ruang: O(1) Auxiliary (In-Place)
+ * Keunggulan: Melakukan maksimal n-1 kali pertukaran (SWAP)
+ */
+void selectionSortByName(Product arr[], int n, int ascending) {
+    for (int i = 0; i < n - 1; i++) {
+        int targetIdx = i; // Menandai kandidat minimum/maksimum
+
+        for (int j = i + 1; j < n; j++) {
+            int cmp = strcmp(arr[j].name, arr[targetIdx].name);
+            int isBetter = ascending ? (cmp < 0) : (cmp > 0);
+            if (isBetter) {
+                targetIdx = j; // Ditemukan kandidat ekstrem baru (MIN_FOUND)
+            }
+        }
+
+        // Tukar posisi elemen i dengan targetIdx (SWAP)
+        if (targetIdx != i) {
+            Product temp = arr[i];
+            arr[i] = arr[targetIdx];
+            arr[targetIdx] = temp;
+        }
+    }
+}
+
+/**
+ * Selection Sort berdasarkan Harga (Numerik double)
+ */
 void selectionSortByPrice(Product arr[], int n, int ascending) {
     for (int i = 0; i < n - 1; i++) {
         int targetIdx = i;
@@ -225,13 +314,13 @@ void selectionSortByPrice(Product arr[], int n, int ascending) {
             int isBetter = ascending ? (arr[j].price < arr[targetIdx].price)
                                      : (arr[j].price > arr[targetIdx].price);
             if (isBetter) {
-                targetIdx = j; // Kandidat nilai ekstrem baru (MIN_FOUND)
+                targetIdx = j;
             }
         }
         if (targetIdx != i) {
             Product temp = arr[i];
             arr[i] = arr[targetIdx];
-            arr[targetIdx] = temp; // Pertukaran posisi (SWAP)
+            arr[targetIdx] = temp;
         }
     }
 }`,
@@ -242,9 +331,8 @@ export function* selectionSort(items, property, direction = 'asc') {
     let targetIdx = i;
     for (let j = i + 1; j < arr.length; j++) {
       yield { type: 'COMPARE', indices: { active: targetIdx, compare: j } };
-      const isBetter = direction === 'asc'
-        ? arr[j][property] < arr[targetIdx][property]
-        : arr[j][property] > arr[targetIdx][property];
+      const cmp = comparePropertyValues(arr[j][property], arr[targetIdx][property], property);
+      const isBetter = direction === 'asc' ? cmp < 0 : cmp > 0;
       if (isBetter) {
         targetIdx = j;
         yield { type: 'MIN_FOUND', indices: { active: targetIdx, compare: i } };
@@ -258,25 +346,80 @@ export function* selectionSort(items, property, direction = 'asc') {
 }`
   },
   searching: {
-    c: `// [BAHASA C] Linear Search & Binary Search pada Array of Struct
-int linearSearchById(Product arr[], int n, int targetId) {
+    c: `// [BAHASA C] Searching: Linear Search O(n) & Binary Search O(log n) Generik
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
+/**
+ * 1. LINEAR SEARCH O(n)
+ * Menelusuri seluruh elemen sekuensial satu per satu dari indeks 0 hingga n-1.
+ * Kompleksitas Waktu: O(n) terburuk/rata-rata, O(1) terbaik.
+ */
+int linearSearchById(const Product* arr, int n, int targetId) {
     for (int i = 0; i < n; i++) {
         if (arr[i].id == targetId) return i; // FOUND
+    }
+    return -1; // NOT FOUND
+}
+
+/**
+ * 2. BINARY SEARCH O(log n) DENGAN PENANGANAN TIPE DATA GENERIK
+ * Prasyarat Mutlak: Array HARUS sudah terurut (Sorted)!
+ * Menggunakan strategi Divide and Conquer: membagi separuh rentang pencarian
+ * setiap langkah perbandingan sehingga kompleksitas waktu tereduksi drastis menjadi O(log n).
+ *
+ * Menggunakan pointer 'const Product* arr' untuk efisiensi memori stack,
+ * menghindari penyalinan seluruh array data struct.
+ */
+
+// A. Pencarian Biner berdasarkan ID Produk (Integer)
+int binarySearchById(const Product* arr, int n, int targetId, int ascending) {
+    int low = 0, high = n - 1;
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        if (arr[mid].id == targetId) return mid; // Titik tengah cocok
+        if (ascending) {
+            if (arr[mid].id < targetId) low = mid + 1;
+            else high = mid - 1;
+        } else {
+            if (arr[mid].id > targetId) low = mid + 1;
+            else high = mid - 1;
+        }
     }
     return -1;
 }
 
-// [BAHASA C] Binary Search Mendukung Ascending & Descending
-int binarySearchByProperty(Product arr[], int n, double target, int ascending) {
+// B. Pencarian Biner berdasarkan Harga (Double) / Rating (Float) dengan Epsilon
+int binarySearchByPrice(const Product* arr, int n, double targetPrice, int ascending) {
+    int low = 0, high = n - 1;
+    const double EPSILON = 1e-5; // Menghindari kesalahan presisi desimal floating-point
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        if (fabs(arr[mid].price - targetPrice) < EPSILON) return mid;
+        if (ascending) {
+            if (arr[mid].price < targetPrice) low = mid + 1;
+            else high = mid - 1;
+        } else {
+            if (arr[mid].price > targetPrice) low = mid + 1;
+            else high = mid - 1;
+        }
+    }
+    return -1;
+}
+
+// C. Pencarian Biner berdasarkan Nama Produk (String via strcmp)
+int binarySearchByName(const Product* arr, int n, const char* targetName, int ascending) {
     int low = 0, high = n - 1;
     while (low <= high) {
         int mid = low + (high - low) / 2;
-        if (arr[mid].price == target) return mid;
+        int cmp = strcmp(arr[mid].name, targetName);
+        if (cmp == 0) return mid; // String identik ditemukan
         if (ascending) {
-            if (arr[mid].price < target) low = mid + 1;
+            if (cmp < 0) low = mid + 1;
             else high = mid - 1;
         } else {
-            if (arr[mid].price > target) low = mid + 1;
+            if (cmp > 0) low = mid + 1;
             else high = mid - 1;
         }
     }
@@ -294,11 +437,13 @@ export function* binarySearch(items, keyword, property = 'id') {
   while (low <= high) {
     const mid = Math.floor((low + high) / 2);
     yield { type: 'CHECKING', indices: { active: mid, low, high } };
-    if (items[mid][property] === target) {
+    const cmp = comparePropertyValues(items[mid][property], target, property);
+    if (cmp === 0) {
+      // Ekspansi traversal lokal kiri & kanan untuk menangkap seluruh item duplikat
       yield { type: 'FOUND', indices: { active: mid } };
       return;
     }
-    if (items[mid][property] < target) low = mid + 1;
+    if (sortOrder === 'asc' ? cmp < 0 : cmp > 0) low = mid + 1;
     else high = mid - 1;
   }
 }`
@@ -317,6 +462,7 @@ function formatPropValue(product, prop) {
   if (!product) return '-';
   if (prop === 'price') return formatIDR(product.price);
   if (prop === 'rating') return `★ ${product.rating.toFixed(1)}`;
+  if (prop === 'name') return `"${product.name}"`;
   return `ID:${product.id}`;
 }
 
@@ -543,10 +689,15 @@ function buildEnrichedStepHistory(generator, kind, meta = {}) {
     } else if (kind === 'SEARCH') {
       if (step.type === 'NOT_SORTED') {
         humanText = step.logMessage;
-      } else if (step.type === 'FOUND' && step.indices.active !== null) {
-        matchedSet.add(step.indices.active);
+      } else if (step.type === 'FOUND') {
+        if (step.indices?.matchedIndices && Array.isArray(step.indices.matchedIndices)) {
+          step.indices.matchedIndices.forEach(idx => matchedSet.add(idx));
+        }
+        if (step.indices?.active !== null && step.indices?.active !== undefined) {
+          matchedSet.add(step.indices.active);
+        }
         const item = step.arraySnapshot[step.indices.active];
-        humanText = `COCOK! Produk '${item.name}' (ID:${item.id}) ditemukan pada Array Indeks [${step.indices.active}].`;
+        humanText = `COCOK! Produk '${item.name}' (ID:${item.id}) ditemukan pada Array Indeks [${step.indices.active}]. Total cocok: ${matchedSet.size} item.`;
       } else if (step.type === 'CHECKING' && step.indices.active !== null) {
         const item = step.arraySnapshot[step.indices.active];
         if (meta.method === 'binary') {
@@ -555,6 +706,9 @@ function buildEnrichedStepHistory(generator, kind, meta = {}) {
           humanText = `Memeriksa Array Indeks [${step.indices.active}] ('${item.name}') -> Belum cocok dengan kata kunci.`;
         }
       } else if (step.type === 'COMPLETE') {
+        if (step.indices?.matchedIndices && Array.isArray(step.indices.matchedIndices)) {
+          step.indices.matchedIndices.forEach(idx => matchedSet.add(idx));
+        }
         humanText = `Pencarian ${meta.method === 'binary' ? 'Binary Search' : 'Linear Search'} selesai. Ditemukan ${matchedSet.size} produk yang sesuai.`;
       }
     }
@@ -664,12 +818,17 @@ function renderCatalogGrid(items, stepContext = null, animateMovement = true) {
 
     const isOutOfStock = product.stock <= 0;
     const isAddDisabled = isPlaybackSessionActive || isOutOfStock;
+    const slotAddress = '0x' + (0x7FFE00 + idx * 0x20).toString(16).toUpperCase();
 
     card.innerHTML = `
       <div class="card-status-ribbon">${ribbonText}</div>
       <div class="card-top-bar">
-        <span class="index-badge">Index[${idx}]</span>
-        <span class="memory-badge" title="Simulasi Alamat Memori Statis">${product.simulatedAddress}</span>
+        <span class="slot-badge" title="Alamat Memori Kontigu Slot Array Fisik &arr[${idx}] (Statis)">
+          <span class="index-badge">[${idx}]</span> Slot Addr: ${slotAddress}
+        </span>
+        <span class="memory-badge" title="Pointer Instance Struct Product di Heap (Berpindah saat Swap/Shift)">
+          Obj Ptr: ${product.simulatedAddress}
+        </span>
       </div>
       <div class="card-image-box">
         <img src="${product.image}" alt="${product.name}">
@@ -922,6 +1081,7 @@ function handleResetCatalog() {
   syncPlaybackAndModeUI();
 
   cartList.clear();
+  ProductRepository.resetStock();
   catalogArray = ProductRepository.getInitialClone();
   updateCartUI();
   renderCatalogGrid(catalogArray, null, true);
@@ -983,7 +1143,7 @@ function syncAllCatalogCardsStock() {
 
 function handleAddToCart(productId) {
   if (isPlaybackSessionActive) return;
-  const targetProduct = catalogArray.find(p => p.id === productId) || ProductRepository.getById(productId);
+  const targetProduct = catalogArray.find(p => p.id === productId);
   if (!targetProduct) return;
 
   if (targetProduct.stock <= 0) {
@@ -996,6 +1156,8 @@ function handleAddToCart(productId) {
     showToast(result.message);
     return;
   }
+
+  ProductRepository.updateStock(targetProduct.id, targetProduct.stock);
 
   syncCatalogCardStock(targetProduct.id);
   appendTerminalLog(
@@ -1088,6 +1250,7 @@ function updateCartUI() {
 
     nodeCard.querySelector('[data-action="dec"]').addEventListener('click', () => {
       cartList.decrease(product.id);
+      ProductRepository.updateStock(product.id, product.stock);
       syncCatalogCardStock(product.id);
       appendTerminalLog(`[LINKED-LIST][DECREASE] Mengurangi kuantitas simpul produk ID:${product.id} (Sisa Stok: ${product.stock}).`, 'SHIFT');
       updateCartUI();
@@ -1099,6 +1262,7 @@ function updateCartUI() {
       }
       const res = cartList.add(product, 1);
       if (!res.success) return showToast(res.message);
+      ProductRepository.updateStock(product.id, product.stock);
       syncCatalogCardStock(product.id);
       appendTerminalLog(`[LINKED-LIST][INCREASE] Menambah kuantitas simpul produk ID:${product.id} menjadi ${res.quantity} (Sisa Stok: ${product.stock}).`, 'INSERT');
       updateCartUI();
@@ -1106,6 +1270,7 @@ function updateCartUI() {
 
     nodeCard.querySelector('[data-action="remove"]').addEventListener('click', () => {
       cartList.remove(product.id);
+      ProductRepository.updateStock(product.id, product.stock);
       syncCatalogCardStock(product.id);
       appendTerminalLog(`[LINKED-LIST][REMOVE] Memutus pointer simpul produk ID:${product.id} dari Linked List (Stok dipulihkan: ${product.stock}).`, 'COMPLETE');
       updateCartUI();
@@ -1188,9 +1353,10 @@ function handleConfirmCheckout() {
 function finalizeReceiptAndClearCart() {
   receiptModalBackdropEl.classList.add('hidden');
   cartList.clear();
+  ProductRepository.resetStock();
   catalogArray.forEach(p => {
-    const master = ProductRepository.getById(p.id);
-    if (master) p.stock = master.stock;
+    p.stock = ProductRepository.getMasterStock(p.id);
+    ProductRepository.updateStock(p.id, p.stock);
   });
   syncAllCatalogCardsStock();
   updateCartUI();
@@ -1213,7 +1379,7 @@ const appGuidedTour = new GuidedTour(
     {
       selector: '#tourSortingPanel',
       title: '1. PANEL PENGURUTAN (SORTING)',
-      description: 'Pilih algoritma Insertion Sort atau Selection Sort, tentukan properti (Harga, Rating, atau ID) beserta arah urutannya, lalu klik "JALANKAN SORTING".',
+      description: 'Pilih algoritma Insertion Sort atau Selection Sort, tentukan properti (Nama Produk, Harga, Rating, atau ID) beserta arah urutannya, lalu klik "JALANKAN SORTING".',
       beforeEnter: () => toggleCartDrawer(false)
     },
     {
@@ -1224,21 +1390,26 @@ const appGuidedTour = new GuidedTour(
     {
       selector: '#tourExecutionBar',
       title: '3. KONTROL GENERATOR & KECEPATAN',
-      description: 'Atur jeda kecepatan animasi secara real-time, atau gunakan tombol << PREV, PAUSE/CONTINUE, NEXT >>, dan STOP/END untuk menganalisis langkah algoritma satu per satu.'
+      description: 'Atur jeda kecepatan animasi secara real-time, atau gunakan tombol << PREV, PAUSE/CONTINUE, NEXT >>, dan LEWATI >> untuk menganalisis langkah algoritma satu per satu.'
+    },
+    {
+      selector: '#tourShortcutsBadge',
+      title: '4. TOMBOL CEPAT (KEYBOARD SHORTCUTS)',
+      description: 'Kendalikan simulasi secara cepat menggunakan keyboard: [Space] untuk Jeda/Lanjut, [←] untuk Langkah Sebelumnya, [→] untuk Langkah Berikutnya, dan [Esc] untuk Menutup Modal atau Keranjang.'
     },
     {
       selector: '#tourCatalogSection',
-      title: '4. ETALASE KATALOG & ALAMAT MEMORI',
-      description: 'Setiap kartu produk menampilkan indeks Array saat ini, simulasi alamat memori heksadesimal (0x7FFE...), serta pita indikator visual SHIFT dan SWAP.'
+      title: '5. ETALASE KATALOG & DUALISASI MEMORI',
+      description: 'Setiap kartu produk menampilkan alamat fisik slot memori array yang statis (Slot Addr: 0x7FFE...) dan alamat pointer objek struct di memori heap (Obj Ptr: 0x7FFE...).'
     },
     {
       selector: '#tourTerminalSection',
-      title: '5. TERMINAL EKSEKUSI LOG',
+      title: '6. TERMINAL EKSEKUSI LOG',
       description: 'Mencatat setiap operasi perbandingan (COMPARE), pergeseran (SHIFT), pertukaran (SWAP), penyisipan (INSERT), dan pencocokan data secara berurutan.'
     },
     {
       selector: '#cartDrawer',
-      title: '6. KERANJANG SINGLY LINKED LIST',
+      title: '7. KERANJANG SINGLY LINKED LIST',
       description: 'Memvisualisasikan rantai pointer objek nyata di Heap Memory ([Head] -> Node -> [Tail] NULL) setiap kali Anda menambah atau menghapus barang belanjaan.',
       beforeEnter: () => toggleCartDrawer(true)
     }
