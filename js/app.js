@@ -32,6 +32,7 @@ const sortPropertyEl = document.getElementById('sortProperty');
 const sortDirectionEl = document.getElementById('sortDirection');
 const btnRunSort = document.getElementById('btnRunSort');
 const btnResetCatalog = document.getElementById('btnResetCatalog');
+const btnShuffleCatalog = document.getElementById('btnShuffleCatalog');
 
 const searchMethodEl = document.getElementById('searchMethod');
 const binaryPropertyFieldEl = document.getElementById('binaryPropertyField');
@@ -265,13 +266,19 @@ int linearSearchById(Product arr[], int n, int targetId) {
     return -1;
 }
 
-int binarySearchById(Product arr[], int n, int targetId) {
+// [BAHASA C] Binary Search Mendukung Ascending & Descending
+int binarySearchByProperty(Product arr[], int n, double target, int ascending) {
     int low = 0, high = n - 1;
     while (low <= high) {
         int mid = low + (high - low) / 2;
-        if (arr[mid].id == targetId) return mid;
-        if (arr[mid].id < targetId) low = mid + 1;
-        else high = mid - 1;
+        if (arr[mid].price == target) return mid;
+        if (ascending) {
+            if (arr[mid].price < target) low = mid + 1;
+            else high = mid - 1;
+        } else {
+            if (arr[mid].price > target) low = mid + 1;
+            else high = mid - 1;
+        }
     }
     return -1;
 }`,
@@ -412,6 +419,9 @@ function setAlgorithmControlsLock(locked) {
   sortPropertyEl.disabled = locked;
   sortDirectionEl.disabled = locked;
   btnRunSort.disabled = locked;
+  if (btnShuffleCatalog) {
+    btnShuffleCatalog.disabled = locked;
+  }
 
   searchMethodEl.disabled = locked;
   searchPropertyEl.disabled = locked;
@@ -432,6 +442,18 @@ function setAlgorithmControlsLock(locked) {
   btnRunSearch.textContent = locked && currentAlgorithmKind === 'SEARCH'
     ? 'PENCARIAN AKTIF...'
     : 'CARI PRODUK';
+
+  const addCartButtons = productGridEl.querySelectorAll('.btn-add-cart');
+  addCartButtons.forEach(btn => {
+    const card = btn.closest('.product-card');
+    const pid = card ? Number(card.dataset.productId) : null;
+    const prod = catalogArray.find(p => p.id === pid);
+    if (locked) {
+      btn.disabled = true;
+    } else {
+      btn.disabled = !prod || prod.stock <= 0;
+    }
+  });
 }
 
 /**
@@ -640,6 +662,9 @@ function renderCatalogGrid(items, stepContext = null, animateMovement = true) {
       }
     }
 
+    const isOutOfStock = product.stock <= 0;
+    const isAddDisabled = isPlaybackSessionActive || isOutOfStock;
+
     card.innerHTML = `
       <div class="card-status-ribbon">${ribbonText}</div>
       <div class="card-top-bar">
@@ -659,8 +684,8 @@ function renderCatalogGrid(items, stepContext = null, animateMovement = true) {
           <span class="stock-badge">Stok: ${product.stock}</span>
         </div>
         <div class="product-price">${formatIDR(product.price)}</div>
-        <button class="btn btn-secondary btn-sm btn-add-cart" type="button">
-          <span>+ TAMBAH KE KERANJANG</span>
+        <button class="btn btn-secondary btn-sm btn-add-cart" type="button" ${isAddDisabled ? 'disabled' : ''}>
+          <span>${isOutOfStock ? 'STOK HABIS' : '+ TAMBAH KE KERANJANG'}</span>
         </button>
       </div>
     `;
@@ -896,15 +921,75 @@ function handleResetCatalog() {
   updateMetricsDisplay('BELUM ADA', 0, 0, '0.00');
   syncPlaybackAndModeUI();
 
+  cartList.clear();
   catalogArray = ProductRepository.getInitialClone();
+  updateCartUI();
   renderCatalogGrid(catalogArray, null, true);
-  appendTerminalLog('[SYSTEM][RESET] Katalog dikembalikan ke susunan Array Master (kondisi awal).', 'COMPLETE');
+  appendTerminalLog('[SYSTEM][RESET] Katalog dikembalikan ke susunan Array Master (kondisi awal). Stok produk dipulihkan.', 'COMPLETE');
   showToast('SUSUNAN KATALOG DIRESET!');
 }
 
+function handleShuffleCatalog() {
+  if (isPlaybackSessionActive) return;
+  stopAutoTimer();
+  setAlgorithmControlsLock(false);
+  currentAlgorithmKind = null;
+  stepHistory = [];
+  currentStepIndex = -1;
+  searchKeywordEl.value = '';
+
+  stepVisualizerBannerEl.classList.remove('banner-warn', 'banner-danger');
+  stepTypeBadgeEl.textContent = 'IDLE';
+  stepProgressTextEl.textContent = 'LANGKAH 0 / 0';
+  stepHumanExplanationEl.textContent = 'Urutan katalog telah diacak menggunakan algoritma Fisher-Yates Shuffle.';
+  keyHolderBoxEl.classList.add('hidden');
+  engineStatusEl.textContent = 'SIAP (IDLE)';
+  updateMetricsDisplay('BELUM ADA', 0, 0, '0.00');
+  syncPlaybackAndModeUI();
+
+  for (let i = catalogArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [catalogArray[i], catalogArray[j]] = [catalogArray[j], catalogArray[i]];
+  }
+
+  appendTerminalLog('[SYSTEM][SHUFFLE] Urutan katalog diacak secara acak (Fisher-Yates Shuffle).', 'COMPLETE');
+  renderCatalogGrid(catalogArray, null, true);
+  showToast('URUTAN KATALOG DIACAK!');
+}
+
+function syncCatalogCardStock(productId) {
+  const card = productGridEl.querySelector(`.product-card[data-product-id="${productId}"]`);
+  if (!card) return;
+  const product = catalogArray.find(p => p.id === productId);
+  if (!product) return;
+
+  const stockBadge = card.querySelector('.stock-badge');
+  if (stockBadge) stockBadge.textContent = `Stok: ${product.stock}`;
+
+  const btnAdd = card.querySelector('.btn-add-cart');
+  if (btnAdd) {
+    const isOutOfStock = product.stock <= 0;
+    btnAdd.disabled = isPlaybackSessionActive || isOutOfStock;
+    const spanText = btnAdd.querySelector('span');
+    if (spanText) {
+      spanText.textContent = isOutOfStock ? 'STOK HABIS' : '+ TAMBAH KE KERANJANG';
+    }
+  }
+}
+
+function syncAllCatalogCardsStock() {
+  catalogArray.forEach(p => syncCatalogCardStock(p.id));
+}
+
 function handleAddToCart(productId) {
+  if (isPlaybackSessionActive) return;
   const targetProduct = catalogArray.find(p => p.id === productId) || ProductRepository.getById(productId);
   if (!targetProduct) return;
+
+  if (targetProduct.stock <= 0) {
+    showToast('STOK PRODUK HABIS!');
+    return;
+  }
 
   const result = cartList.add(targetProduct, 1);
   if (!result.success) {
@@ -912,8 +997,9 @@ function handleAddToCart(productId) {
     return;
   }
 
+  syncCatalogCardStock(targetProduct.id);
   appendTerminalLog(
-    `[LINKED-LIST][ADD] Simpul produk ID:${targetProduct.id} ("${targetProduct.name}") ditambahkan/diperbarui (Qty: ${result.quantity}).`,
+    `[LINKED-LIST][ADD] Simpul produk ID:${targetProduct.id} ("${targetProduct.name}") ditambahkan/diperbarui (Qty: ${result.quantity}, Sisa Stok: ${targetProduct.stock}).`,
     'INSERT'
   );
   updateCartUI();
@@ -937,7 +1023,11 @@ function updateCartUI() {
   btnCheckoutOpen.disabled = items.length === 0;
 
   if (items.length === 0) {
-    linkedListDiagramEl.textContent = '[Head] NULL';
+    linkedListDiagramEl.innerHTML = `
+      <span class="pointer-head-tag">[Head]</span>
+      <span class="pointer-arrow">-&gt;</span>
+      <span class="node-null">NULL</span>
+    `;
     cartItemsContainerEl.innerHTML = `
       <div class="cart-empty-state">
         Rantai Singly Linked List kosong (<code>this.head === null</code>).<br>
@@ -947,11 +1037,26 @@ function updateCartUI() {
     return;
   }
 
-  const chainParts = items.map((entry, idx) => {
-    const prefix = idx === 0 ? '[Head] ' : '';
-    return `${prefix}ID:${entry.product.id}(x${entry.quantity})`;
+  let diagramHTML = '<span class="pointer-head-tag">[Head]</span><span class="pointer-arrow">-&gt;</span>';
+
+  items.forEach((entry, idx) => {
+    const { product, quantity } = entry;
+    const nextAddr = idx < items.length - 1 ? items[idx + 1].product.simulatedAddress : 'NULL';
+    diagramHTML += `
+      <div class="node-badge">
+        <div class="node-badge-header">
+          <span class="node-badge-id">ID:${product.id}</span>
+          <span class="node-badge-qty">x${quantity}</span>
+        </div>
+        <div class="node-badge-addr">${product.simulatedAddress}</div>
+        <div class="node-badge-ptr">&rarr; ${nextAddr}</div>
+      </div>
+      <span class="pointer-arrow">-&gt;</span>
+    `;
   });
-  linkedListDiagramEl.textContent = `${chainParts.join(' -> ')} -> [Tail] NULL`;
+
+  diagramHTML += '<span class="node-null">[Tail] NULL</span>';
+  linkedListDiagramEl.innerHTML = diagramHTML;
 
   cartItemsContainerEl.innerHTML = '';
   items.forEach((entry, index) => {
@@ -983,20 +1088,26 @@ function updateCartUI() {
 
     nodeCard.querySelector('[data-action="dec"]').addEventListener('click', () => {
       cartList.decrease(product.id);
-      appendTerminalLog(`[LINKED-LIST][DECREASE] Mengurangi kuantitas simpul produk ID:${product.id}.`, 'SHIFT');
+      syncCatalogCardStock(product.id);
+      appendTerminalLog(`[LINKED-LIST][DECREASE] Mengurangi kuantitas simpul produk ID:${product.id} (Sisa Stok: ${product.stock}).`, 'SHIFT');
       updateCartUI();
     });
 
     nodeCard.querySelector('[data-action="inc"]').addEventListener('click', () => {
+      if (product.stock <= 0) {
+        return showToast('Melebihi sisa stok produk!');
+      }
       const res = cartList.add(product, 1);
       if (!res.success) return showToast(res.message);
-      appendTerminalLog(`[LINKED-LIST][INCREASE] Menambah kuantitas simpul produk ID:${product.id} menjadi ${res.quantity}.`, 'INSERT');
+      syncCatalogCardStock(product.id);
+      appendTerminalLog(`[LINKED-LIST][INCREASE] Menambah kuantitas simpul produk ID:${product.id} menjadi ${res.quantity} (Sisa Stok: ${product.stock}).`, 'INSERT');
       updateCartUI();
     });
 
     nodeCard.querySelector('[data-action="remove"]').addEventListener('click', () => {
       cartList.remove(product.id);
-      appendTerminalLog(`[LINKED-LIST][REMOVE] Memutus pointer simpul produk ID:${product.id} dari Linked List.`, 'COMPLETE');
+      syncCatalogCardStock(product.id);
+      appendTerminalLog(`[LINKED-LIST][REMOVE] Memutus pointer simpul produk ID:${product.id} dari Linked List (Stok dipulihkan: ${product.stock}).`, 'COMPLETE');
       updateCartUI();
     });
 
@@ -1077,8 +1188,13 @@ function handleConfirmCheckout() {
 function finalizeReceiptAndClearCart() {
   receiptModalBackdropEl.classList.add('hidden');
   cartList.clear();
+  catalogArray.forEach(p => {
+    const master = ProductRepository.getById(p.id);
+    if (master) p.stock = master.stock;
+  });
+  syncAllCatalogCardsStock();
   updateCartUI();
-  appendTerminalLog('[CHECKOUT][CLEAR] Transaksi selesai. Method cart.clear() dieksekusi (this.head = null).', 'COMPLETE');
+  appendTerminalLog('[CHECKOUT][CLEAR] Transaksi selesai. Stok produk dipulihkan ke master data dan keranjang dikosongkan.', 'COMPLETE');
   showToast('TRANSAKSI SELESAI & KERANJANG DIKOSONGKAN!');
 }
 
@@ -1161,6 +1277,7 @@ function initApp() {
 
   btnRunSort.addEventListener('click', handleRunSorting);
   btnResetCatalog.addEventListener('click', handleResetCatalog);
+  if (btnShuffleCatalog) btnShuffleCatalog.addEventListener('click', handleShuffleCatalog);
   btnRunSearch.addEventListener('click', handleRunSearching);
 
   searchMethodEl.addEventListener('change', () => {

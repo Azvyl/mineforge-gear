@@ -3,19 +3,29 @@
  * Digunakan sebagai prasyarat mutlak sebelum menjalankan Binary Search
  */
 export function detectSortOrder(items, property) {
-  let isAsc = true;
-  let isDesc = true;
+  if (!items || items.length <= 1) return 'asc';
+
+  let hasAsc = false;
+  let hasDesc = false;
 
   for (let i = 0; i < items.length - 1; i++) {
     const curr = items[i][property];
     const next = items[i + 1][property];
-    if (curr > next) isAsc = false;
-    if (curr < next) isDesc = false;
+
+    if (curr < next) {
+      hasAsc = true;
+    } else if (curr > next) {
+      hasDesc = true;
+    }
+
+    if (hasAsc && hasDesc) {
+      return null;
+    }
   }
 
-  if (isAsc) return 'asc';
-  if (isDesc) return 'desc';
-  return null;
+  if (hasAsc && !hasDesc) return 'asc';
+  if (!hasAsc && hasDesc) return 'desc';
+  return 'asc';
 }
 
 /**
@@ -32,7 +42,7 @@ export function* insertionSort(items, property, direction = 'asc') {
     let j = i - 1;
 
     comparisons++;
-    const initialCompareSnapshot = [...arr];
+    const initialCompareSnapshot = arr.map(item => ({ ...item }));
     initialCompareSnapshot[i] = key;
     yield {
       type: 'COMPARE',
@@ -49,7 +59,7 @@ export function* insertionSort(items, property, direction = 'asc') {
       const shiftedItem = arr[j];
       arr[j + 1] = shiftedItem;
       shifts++;
-      const shiftSnapshot = [...arr];
+      const shiftSnapshot = arr.map(item => ({ ...item }));
       shiftSnapshot[j] = key;
       yield {
         type: 'SHIFT',
@@ -64,7 +74,7 @@ export function* insertionSort(items, property, direction = 'asc') {
       j--;
       if (j >= 0) {
         comparisons++;
-        const nextCompareSnapshot = [...arr];
+        const nextCompareSnapshot = arr.map(item => ({ ...item }));
         nextCompareSnapshot[j + 1] = key;
         yield {
           type: 'COMPARE',
@@ -83,7 +93,7 @@ export function* insertionSort(items, property, direction = 'asc') {
       indices: { active: j + 1, compare: null, passIndex: i },
       keyProduct: key,
       metrics: { comparisons, shiftsOrSwaps: shifts },
-      arraySnapshot: [...arr],
+      arraySnapshot: arr.map(item => ({ ...item })),
       logMessage: `[INSERTION][PASS ${i}][INSERT] Menempatkan Key "${key.name}" secara permanen pada Indeks [${j + 1}]`
     };
   }
@@ -93,7 +103,7 @@ export function* insertionSort(items, property, direction = 'asc') {
     indices: { active: null, compare: null },
     keyProduct: null,
     metrics: { comparisons, shiftsOrSwaps: shifts },
-    arraySnapshot: [...arr],
+    arraySnapshot: arr.map(item => ({ ...item })),
     logMessage: `[INSERTION][COMPLETE] Pengurutan ${property.toUpperCase()} (${direction.toUpperCase()}) selesai. Total Perbandingan: ${comparisons}, Pergeseran (Shift): ${shifts}.`
   };
 }
@@ -119,7 +129,7 @@ export function* selectionSort(items, property, direction = 'asc') {
         indices: { active: targetIdx, compare: j, passStart: i },
         keyProduct: arr[targetIdx],
         metrics: { comparisons, shiftsOrSwaps: swaps },
-        arraySnapshot: [...arr],
+        arraySnapshot: arr.map(item => ({ ...item })),
         logMessage: `[SELECTION][PASS ${i + 1}][COMPARE] Membandingkan kandidat ${targetLabel} [${targetIdx}] "${arr[targetIdx].name}" (${arr[targetIdx][property]}) dengan [${j}] "${arr[j].name}" (${arr[j][property]})`
       };
 
@@ -134,7 +144,7 @@ export function* selectionSort(items, property, direction = 'asc') {
           indices: { active: targetIdx, compare: i, passStart: i },
           keyProduct: arr[targetIdx],
           metrics: { comparisons, shiftsOrSwaps: swaps },
-          arraySnapshot: [...arr],
+          arraySnapshot: arr.map(item => ({ ...item })),
           logMessage: `[SELECTION][PASS ${i + 1}][MIN_FOUND] Kandidat ${targetLabel} baru ditemukan pada Indeks [${targetIdx}]: "${arr[targetIdx].name}" (${property}: ${arr[targetIdx][property]})`
         };
       }
@@ -159,7 +169,7 @@ export function* selectionSort(items, property, direction = 'asc') {
           targetLabel: targetLabel.toLowerCase()
         },
         metrics: { comparisons, shiftsOrSwaps: swaps },
-        arraySnapshot: [...arr],
+        arraySnapshot: arr.map(item => ({ ...item })),
         logMessage: `[SELECTION][PASS ${i + 1}][SWAP] Menukar (SWAP) elemen Indeks [${i}] ('${originalAtI.name}') dengan target ${targetLabel.toLowerCase()} Indeks [${targetIdx}] ('${extremeAtTarget.name}').`
       };
     }
@@ -170,7 +180,7 @@ export function* selectionSort(items, property, direction = 'asc') {
     indices: { active: null, compare: null },
     keyProduct: null,
     metrics: { comparisons, shiftsOrSwaps: swaps },
-    arraySnapshot: [...arr],
+    arraySnapshot: arr.map(item => ({ ...item })),
     logMessage: `[SELECTION][COMPLETE] Selection Sort ${property.toUpperCase()} (${direction.toUpperCase()}) selesai. Total Perbandingan: ${comparisons}, Pertukaran (Swap): ${swaps}.`
   };
 }
@@ -188,7 +198,7 @@ export function* linearSearch(items, keyword) {
     type: 'START',
     indices: { active: null, compare: null },
     metrics: { comparisons: 0, shiftsOrSwaps: 0 },
-    arraySnapshot: [...items],
+    arraySnapshot: items.map(item => ({ ...item })),
     logMessage: `[LINEAR-SEARCH][START] Memulai pencarian sekuensial kata kunci: "${keyword}" pada ${n} item produk`
   };
 
@@ -207,7 +217,7 @@ export function* linearSearch(items, keyword) {
         type: 'FOUND',
         indices: { active: i, compare: null },
         metrics: { comparisons, shiftsOrSwaps: 0 },
-        arraySnapshot: [...items],
+        arraySnapshot: items.map(item => ({ ...item })),
         logMessage: `[LINEAR-SEARCH][STEP ${i + 1}][FOUND] Ditemukan kecocokan pada Indeks [${i}]: "${item.name}" (ID: ${item.id})`
       };
     } else {
@@ -215,7 +225,7 @@ export function* linearSearch(items, keyword) {
         type: 'CHECKING',
         indices: { active: i, compare: null },
         metrics: { comparisons, shiftsOrSwaps: 0 },
-        arraySnapshot: [...items],
+        arraySnapshot: items.map(item => ({ ...item })),
         logMessage: `[LINEAR-SEARCH][STEP ${i + 1}][CHECKING] Indeks [${i}]: "${item.name}" -> Tidak cocok`
       };
     }
@@ -225,7 +235,7 @@ export function* linearSearch(items, keyword) {
     type: 'COMPLETE',
     indices: { active: null, compare: null },
     metrics: { comparisons, shiftsOrSwaps: 0 },
-    arraySnapshot: [...items],
+    arraySnapshot: items.map(item => ({ ...item })),
     logMessage: `[LINEAR-SEARCH][COMPLETE] Penelusuran selesai. Ditemukan ${matchCount} item dari ${comparisons} perbandingan.`
   };
 }
@@ -242,22 +252,39 @@ export function* binarySearch(items, keyword, property = 'id') {
       type: 'NOT_SORTED',
       indices: { active: null, compare: null },
       metrics: { comparisons: 0, shiftsOrSwaps: 0 },
-      arraySnapshot: [...items],
+      arraySnapshot: items.map(item => ({ ...item })),
       logMessage: `[BINARY-SEARCH][PERINGATAN] Array belum terurut berdasarkan properti "${property.toUpperCase()}"! Silakan jalankan Sorting pada properti "${property.toUpperCase()}" terlebih dahulu sebelum menggunakan Binary Search.`
     };
     return;
   }
 
-  const rawQuery = keyword.trim().replace(/[^0-9.]/g, '');
-  const targetVal = Number(rawQuery);
+  const strKeyword = String(keyword ?? '').trim();
+  let sanitized = '';
 
-  if (!rawQuery || Number.isNaN(targetVal)) {
+  if (property === 'price' || property === 'id') {
+    sanitized = strKeyword.replace(/\D/g, '');
+  } else if (property === 'rating') {
+    const withDot = strKeyword.replace(/,/g, '.');
+    const cleanChars = withDot.replace(/[^0-9.]/g, '');
+    const parts = cleanChars.split('.');
+    if (parts.length > 1) {
+      sanitized = parts[0] + '.' + parts.slice(1).join('');
+    } else {
+      sanitized = parts[0];
+    }
+  } else {
+    sanitized = strKeyword.replace(/\D/g, '');
+  }
+
+  const targetVal = Number(sanitized);
+
+  if (!sanitized || sanitized === '.' || Number.isNaN(targetVal)) {
     yield {
       type: 'NOT_SORTED',
       indices: { active: null, compare: null },
       metrics: { comparisons: 0, shiftsOrSwaps: 0 },
-      arraySnapshot: [...items],
-      logMessage: `[BINARY-SEARCH][PERINGATAN] Binary Search pada properti "${property.toUpperCase()}" membutuhkan input angka numerik (contoh ID: 205, Harga: 185000, atau Rating: 4.8).`
+      arraySnapshot: items.map(item => ({ ...item })),
+      logMessage: `[BINARY-SEARCH][PERINGATAN] Binary Search pada properti "${property.toUpperCase()}" membutuhkan input angka numerik yang valid (contoh ID: 205, Harga: 185000 / 185.000, atau Rating: 4.8 / 4,8).`
     };
     return;
   }
@@ -271,7 +298,7 @@ export function* binarySearch(items, keyword, property = 'id') {
     type: 'START',
     indices: { active: null, compare: null, low, high },
     metrics: { comparisons: 0, shiftsOrSwaps: 0 },
-    arraySnapshot: [...items],
+    arraySnapshot: items.map(item => ({ ...item })),
     logMessage: `[BINARY-SEARCH][START] Array terdeteksi sudah terurut (${sortOrder.toUpperCase()}). Mencari ${property.toUpperCase()} = ${targetVal} pada rentang Indeks [${low}..${high}].`
   };
 
@@ -285,16 +312,20 @@ export function* binarySearch(items, keyword, property = 'id') {
       type: 'CHECKING',
       indices: { active: mid, compare: null, low, high },
       metrics: { comparisons, shiftsOrSwaps: 0 },
-      arraySnapshot: [...items],
+      arraySnapshot: items.map(item => ({ ...item })),
       logMessage: `[BINARY-SEARCH][STEP ${stepNum}][CHECKING] Rentang [${low}..${high}] -> Menguji titik tengah Mid [${mid}] "${items[mid].name}" (${property}: ${midVal})`
     };
 
-    if (midVal === targetVal) {
+    const isMatch = property === 'rating'
+      ? Math.abs(midVal - targetVal) < 0.0001
+      : midVal === targetVal;
+
+    if (isMatch) {
       yield {
         type: 'FOUND',
         indices: { active: mid, compare: null, low, high },
         metrics: { comparisons, shiftsOrSwaps: 0 },
-        arraySnapshot: [...items],
+        arraySnapshot: items.map(item => ({ ...item })),
         logMessage: `[BINARY-SEARCH][STEP ${stepNum}][FOUND] Target ${property.toUpperCase()} = ${targetVal} ditemukan tepat pada Mid Indeks [${mid}]: "${items[mid].name}"!`
       };
 
@@ -302,7 +333,7 @@ export function* binarySearch(items, keyword, property = 'id') {
         type: 'COMPLETE',
         indices: { active: mid, compare: null, low, high },
         metrics: { comparisons, shiftsOrSwaps: 0 },
-        arraySnapshot: [...items],
+        arraySnapshot: items.map(item => ({ ...item })),
         logMessage: `[BINARY-SEARCH][COMPLETE] Pencarian biner selesai dengan sangat efisien dalam ${comparisons} perbandingan.`
       };
       return;
@@ -320,7 +351,7 @@ export function* binarySearch(items, keyword, property = 'id') {
     type: 'COMPLETE',
     indices: { active: null, compare: null },
     metrics: { comparisons, shiftsOrSwaps: 0 },
-    arraySnapshot: [...items],
+    arraySnapshot: items.map(item => ({ ...item })),
     logMessage: `[BINARY-SEARCH][COMPLETE] Target ${property.toUpperCase()} = ${targetVal} tidak ditemukan setelah ${comparisons} perbandingan.`
   };
 }
