@@ -20,9 +20,29 @@ export const DEFAULT_TOUR_STEPS = [
     description: 'Atur jeda kecepatan animasi secara real-time, atau gunakan tombol << PREV, PAUSE/CONTINUE, NEXT >>, dan LEWATI >> untuk menganalisis langkah algoritma satu per satu.'
   },
   {
-    selector: '#tourShortcutsBadge',
-    title: '4. TOMBOL CEPAT (KEYBOARD SHORTCUTS)',
-    description: 'Kendalikan simulasi secara cepat menggunakan keyboard: [Space] untuk Jeda/Lanjut, [←] untuk Langkah Sebelumnya, [→] untuk Langkah Berikutnya, dan [Esc] untuk Menutup Modal atau Keranjang.'
+    selector: null,
+    title: '4. TOMBOL PINTAS (KEYBOARD SHORTCUTS)',
+    description: `
+      <p style="margin-bottom: 0.65rem;">Kendalikan simulasi secara cepat menggunakan tombol keyboard:</p>
+      <div class="tour-shortcuts-table">
+        <div class="tour-shortcut-row">
+          <span class="tour-key-badge"><kbd>[Space]</kbd></span>
+          <span class="tour-key-desc">: Jeda / Lanjut animasi</span>
+        </div>
+        <div class="tour-shortcut-row">
+          <span class="tour-key-badge"><kbd>[←]</kbd> (ArrowLeft)</span>
+          <span class="tour-key-desc">: Langkah sebelumnya (Prev)</span>
+        </div>
+        <div class="tour-shortcut-row">
+          <span class="tour-key-badge"><kbd>[→]</kbd> (ArrowRight)</span>
+          <span class="tour-key-desc">: Langkah berikutnya (Next)</span>
+        </div>
+        <div class="tour-shortcut-row">
+          <span class="tour-key-badge"><kbd>[Esc]</kbd></span>
+          <span class="tour-key-desc">: Menutup modal/keranjang aktif</span>
+        </div>
+      </div>
+    `
   },
   {
     selector: '#tourCatalogSection',
@@ -114,6 +134,13 @@ export class GuidedTour {
     window.removeEventListener('keydown', this.boundKeyHandler);
     if (this.overlayEl) {
       this.overlayEl.classList.add('hidden');
+      this.overlayEl.classList.remove('ore-tour-modal-mode');
+    }
+    if (this.spotlightEl) {
+      this.spotlightEl.style.display = 'block';
+    }
+    if (this.tooltipEl) {
+      this.tooltipEl.style.transform = '';
     }
     if (this.callbacks.onFinish) {
       this.callbacks.onFinish();
@@ -133,7 +160,7 @@ export class GuidedTour {
       step.beforeEnter();
     }
 
-    const targetEl = document.querySelector(step.selector);
+    const targetEl = step.selector ? document.querySelector(step.selector) : null;
     if (targetEl) {
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -156,7 +183,7 @@ export class GuidedTour {
       </div>
       <div class="tour-body">
         <h3 class="tour-title">${step.title}</h3>
-        <p class="tour-desc">${step.description}</p>
+        <div class="tour-desc">${step.description}</div>
       </div>
       <div class="tour-footer">
         <button type="button" class="btn btn-secondary btn-sm" data-tour-action="prev" ${isFirst ? 'disabled' : ''}>
@@ -178,8 +205,23 @@ export class GuidedTour {
 
   updatePosition() {
     const step = this.steps[this.currentIndex];
-    const targetEl = document.querySelector(step.selector);
-    if (!targetEl) return;
+    const targetEl = step.selector ? document.querySelector(step.selector) : null;
+
+    if (!targetEl) {
+      this.spotlightEl.style.display = 'none';
+      this.overlayEl.classList.add('ore-tour-modal-mode');
+
+      const modalWidth = Math.min(480, window.innerWidth - 32);
+      this.tooltipEl.style.width = `${modalWidth}px`;
+      this.tooltipEl.style.top = '50%';
+      this.tooltipEl.style.left = '50%';
+      this.tooltipEl.style.transform = 'translate(-50%, -50%)';
+      return;
+    }
+
+    this.spotlightEl.style.display = 'block';
+    this.overlayEl.classList.remove('ore-tour-modal-mode');
+    this.tooltipEl.style.transform = '';
 
     const rect = targetEl.getBoundingClientRect();
     const pad = 6;

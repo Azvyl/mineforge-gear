@@ -996,8 +996,11 @@ function executeAlgorithm(generatorFn, kind, meta = {}) {
     isPaused = true;
     setAlgorithmControlsLock(false);
     applyStepAtIndex(0, true);
-    engineStatusEl.textContent = 'PERINGATAN URUTAN!';
-    showToast('URUTKAN KATALOG TERLEBIH DAHULU SEBELUM BINARY SEARCH!');
+    engineStatusEl.textContent = 'PERINGATAN!';
+    const toastMsg = stepHistory[0].logMessage?.includes('belum terurut')
+      ? 'URUTKAN KATALOG TERLEBIH DAHULU SEBELUM BINARY SEARCH!'
+      : 'MASUKKAN INPUT TARGET YANG VALID!';
+    showToast(toastMsg);
     return;
   }
 
@@ -1393,9 +1396,29 @@ const appGuidedTour = new GuidedTour(
       description: 'Atur jeda kecepatan animasi secara real-time, atau gunakan tombol << PREV, PAUSE/CONTINUE, NEXT >>, dan LEWATI >> untuk menganalisis langkah algoritma satu per satu.'
     },
     {
-      selector: '#tourShortcutsBadge',
-      title: '4. TOMBOL CEPAT (KEYBOARD SHORTCUTS)',
-      description: 'Kendalikan simulasi secara cepat menggunakan keyboard: [Space] untuk Jeda/Lanjut, [←] untuk Langkah Sebelumnya, [→] untuk Langkah Berikutnya, dan [Esc] untuk Menutup Modal atau Keranjang.'
+      selector: null,
+      title: '4. TOMBOL PINTAS (KEYBOARD SHORTCUTS)',
+      description: `
+        <p style="margin-bottom: 0.65rem;">Kendalikan simulasi secara cepat menggunakan tombol keyboard:</p>
+        <div class="tour-shortcuts-table">
+          <div class="tour-shortcut-row">
+            <span class="tour-key-badge"><kbd>[Space]</kbd></span>
+            <span class="tour-key-desc">: Jeda / Lanjut animasi</span>
+          </div>
+          <div class="tour-shortcut-row">
+            <span class="tour-key-badge"><kbd>[←]</kbd> (ArrowLeft)</span>
+            <span class="tour-key-desc">: Langkah sebelumnya (Prev)</span>
+          </div>
+          <div class="tour-shortcut-row">
+            <span class="tour-key-badge"><kbd>[→]</kbd> (ArrowRight)</span>
+            <span class="tour-key-desc">: Langkah berikutnya (Next)</span>
+          </div>
+          <div class="tour-shortcut-row">
+            <span class="tour-key-badge"><kbd>[Esc]</kbd></span>
+            <span class="tour-key-desc">: Menutup modal/keranjang aktif</span>
+          </div>
+        </div>
+      `
     },
     {
       selector: '#tourCatalogSection',
@@ -1451,13 +1474,31 @@ function initApp() {
   if (btnShuffleCatalog) btnShuffleCatalog.addEventListener('click', handleShuffleCatalog);
   btnRunSearch.addEventListener('click', handleRunSearching);
 
+  function updateSearchPlaceholder() {
+    const isBinary = searchMethodEl.value === 'binary';
+    if (!isBinary) {
+      searchKeywordEl.placeholder = 'Ketik Creeper, Hoodie, atau 205...';
+      return;
+    }
+    const prop = searchPropertyEl.value;
+    if (prop === 'name') {
+      searchKeywordEl.placeholder = 'Ketik nama produk (A-Z, contoh: Creeper, Diamond)...';
+    } else if (prop === 'price') {
+      searchKeywordEl.placeholder = 'Masukkan nominal harga (contoh: 185000)...';
+    } else if (prop === 'rating') {
+      searchKeywordEl.placeholder = 'Masukkan rating bintang (contoh: 4.8)...';
+    } else {
+      searchKeywordEl.placeholder = 'Masukkan angka ID produk (contoh: 205)...';
+    }
+  }
+
   searchMethodEl.addEventListener('change', () => {
     const isBinary = searchMethodEl.value === 'binary';
     binaryPropertyFieldEl.classList.toggle('hidden', !isBinary);
-    searchKeywordEl.placeholder = isBinary
-      ? 'Masukkan angka ID (205), Harga (185000), atau Rating (4.8)...'
-      : 'Ketik Creeper, Hoodie, atau 205...';
+    updateSearchPlaceholder();
   });
+
+  searchPropertyEl.addEventListener('change', updateSearchPlaceholder);
 
   searchKeywordEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleRunSearching();

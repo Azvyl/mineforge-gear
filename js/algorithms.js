@@ -14,7 +14,7 @@ export function comparePropertyValues(a, b, property) {
     return numA < numB ? -1 : 1;
   }
   if (property === 'name') {
-    return String(a).localeCompare(String(b), 'id', { sensitivity: 'base' });
+    return String(a ?? '').localeCompare(String(b ?? ''), 'id', { sensitivity: 'base' });
   }
   const numA = Number(a);
   const numB = Number(b);
