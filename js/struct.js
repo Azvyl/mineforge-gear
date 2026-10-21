@@ -35,36 +35,42 @@ export class CartLinkedList {
   }
 
   add(product, quantity = 1) {
+    if (product.stock <= 0) {
+      return { success: false, message: 'Stok produk habis!' };
+    }
+    if (quantity > product.stock) {
+      return { success: false, message: 'Melebihi sisa stok produk!' };
+    }
+
     if (!this.head) {
-      const initialQty = Math.min(quantity, product.stock);
-      this.head = new CartNode(product, initialQty);
+      this.head = new CartNode(product, quantity);
       this.length++;
-      return { success: true, quantity: initialQty };
+      product.stock -= quantity;
+      return { success: true, quantity };
     }
 
     let current = this.head;
     while (current) {
       if (current.product.id === product.id) {
-        if (current.quantity + quantity > product.stock) {
-          return { success: false, message: 'Melebihi sisa stok produk!' };
-        }
         current.quantity += quantity;
+        product.stock -= quantity;
         return { success: true, quantity: current.quantity };
       }
       if (!current.next) break;
       current = current.next;
     }
 
-    const initialQty = Math.min(quantity, product.stock);
-    current.next = new CartNode(product, initialQty);
+    current.next = new CartNode(product, quantity);
     this.length++;
-    return { success: true, quantity: initialQty };
+    product.stock -= quantity;
+    return { success: true, quantity };
   }
 
   decrease(productId) {
     if (!this.head) return false;
 
     if (this.head.product.id === productId) {
+      this.head.product.stock += 1;
       if (this.head.quantity > 1) {
         this.head.quantity--;
       } else {
@@ -80,6 +86,7 @@ export class CartLinkedList {
     }
 
     if (current.next) {
+      current.next.product.stock += 1;
       if (current.next.quantity > 1) {
         current.next.quantity--;
       } else {
@@ -95,6 +102,7 @@ export class CartLinkedList {
     if (!this.head) return false;
 
     if (this.head.product.id === productId) {
+      this.head.product.stock += this.head.quantity;
       this.head = this.head.next;
       this.length--;
       return true;
@@ -106,6 +114,7 @@ export class CartLinkedList {
     }
 
     if (current.next) {
+      current.next.product.stock += current.next.quantity;
       current.next = current.next.next;
       this.length--;
       return true;
@@ -113,7 +122,14 @@ export class CartLinkedList {
     return false;
   }
 
-  clear() {
+  clear(restoreStock = false) {
+    if (restoreStock) {
+      let current = this.head;
+      while (current) {
+        current.product.stock += current.quantity;
+        current = current.next;
+      }
+    }
     this.head = null;
     this.length = 0;
   }

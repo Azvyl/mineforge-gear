@@ -3,6 +3,8 @@ import { ProductRepository } from './repository.js';
 import { insertionSort, selectionSort, linearSearch, binarySearch } from './algorithms.js';
 import { GuidedTour } from './tour.js';
 
+const TOUR_STORAGE_KEY = 'mineforge_tour_completed_v1';
+
 let catalogArray = ProductRepository.getInitialClone();
 const cartList = new CartLinkedList();
 
@@ -10,6 +12,7 @@ let stepHistory = [];
 let currentStepIndex = -1;
 let playbackTimer = null;
 let isPaused = false;
+let isPlaybackSessionActive = false;
 let currentAlgorithmKind = null; // 'SORT' | 'SEARCH'
 let currentAlgoMeta = { method: 'insertion', property: 'price', direction: 'asc' };
 let lastExecutionDurationMs = '0.00';
@@ -21,11 +24,15 @@ const terminalOutputEl = document.getElementById('terminalOutput');
 const logCounterBadgeEl = document.getElementById('logCounterBadge');
 const engineStatusEl = document.getElementById('engineStatusIndicator');
 
+const tourSortingPanelEl = document.getElementById('tourSortingPanel');
+const tourSearchingPanelEl = document.getElementById('tourSearchingPanel');
+
 const sortMethodEl = document.getElementById('sortMethod');
 const sortPropertyEl = document.getElementById('sortProperty');
 const sortDirectionEl = document.getElementById('sortDirection');
 const btnRunSort = document.getElementById('btnRunSort');
 const btnResetCatalog = document.getElementById('btnResetCatalog');
+const btnShuffleCatalog = document.getElementById('btnShuffleCatalog');
 
 const searchMethodEl = document.getElementById('searchMethod');
 const binaryPropertyFieldEl = document.getElementById('binaryPropertyField');
@@ -33,8 +40,10 @@ const searchPropertyEl = document.getElementById('searchProperty');
 const searchKeywordEl = document.getElementById('searchKeyword');
 const btnRunSearch = document.getElementById('btnRunSearch');
 
+const speedControlBlockEl = document.getElementById('speedControlBlock');
 const speedRangeInputEl = document.getElementById('speedRangeInput');
 const speedValueLabelEl = document.getElementById('speedValueLabel');
+const playbackModeRadios = document.querySelectorAll('input[name="playbackMode"]');
 
 const metricActiveAlgoEl = document.getElementById('metricActiveAlgo');
 const metricComparisonsEl = document.getElementById('metricComparisons');
@@ -111,37 +120,61 @@ const CODE_SNIPPETS = {
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * Representasi entitas heterogen dengan Struct di memori kontigu
+ */
 typedef struct {
-    int id;
-    char name[64];
-    char category[32];
-    double price;
-    float rating;
-    int stock;
-    char simulatedAddress[16];
+    int id;                      // Primary Key (4 bytes)
+    char name[64];               // String nama produk (64 bytes)
+    char category[32];           // Kategori produk (32 bytes)
+    double price;                // Harga dalam IDR (8 bytes)
+    float rating;                // Rating bintang 1.0 - 5.0 (4 bytes)
+    int stock;                   // Kuantitas stok produk (4 bytes)
+    char simulatedAddress[16];   // Simulasi alamat pointer memori heap
 } Product;
 
+/**
+ * Simpul elemen Singly Linked List berbasis Heap Memory
+ * Kompleksitas Ruang: O(1) per simpul baru yang dialokasikan
+ */
 typedef struct CartNode {
-    Product product;
-    int quantity;
-    struct CartNode* next; // Pointer ke simpul berikutnya di Heap Memory
+    Product product;             // Salinan / data entitas produk
+    int quantity;                // Kuantitas belanja
+    struct CartNode* next;       // Pointer menuju simpul berikutnya di Heap
 } CartNode;
 
+/**
+ * Menambahkan node baru ke akhir Linked List (Traversal O(n))
+ * Menggunakan alokasi memori dinamis 'malloc' dan dereferensi pointer '->'
+ * @param headRef Pointer ganda ke head list
+ * @param item Struct Product yang dibeli
+ * @param qty Jumlah kuantitas barang
+ */
 void addCartNode(CartNode** headRef, Product item, int qty) {
+    // 1. Alokasi memori dinamis di Heap menggunakan malloc()
     CartNode* newNode = (CartNode*)malloc(sizeof(CartNode));
+    if (newNode == NULL) {
+        printf("Error: Gagal mengalokasikan memori heap!\\n");
+        return;
+    }
+
+    // 2. Dereferensi pointer '->' untuk mengisi nilai properti simpul
     newNode->product = item;
     newNode->quantity = qty;
     newNode->next = NULL;
 
+    // 3. Jika linked list masih kosong (*headRef == NULL), simpul baru menjadi Head
     if (*headRef == NULL) {
         *headRef = newNode;
         return;
     }
+
+    // 4. Traversal linier O(n) mencari simpul akhir (tail)
     CartNode* current = *headRef;
     while (current->next != NULL) {
-        current = current->next;
+        current = current->next; // Pindah ke simpul berikutnya
     }
-    current->next = newNode;
+    current->next = newNode;     // Sambungkan pointer next tail ke simpul baru
 }`,
     js: `// [JAVASCRIPT ES6] Struct Product & Singly Linked List (js/struct.js)
 export class Product {
@@ -173,7 +206,37 @@ export class CartLinkedList {
 }`
   },
   insertion_sort: {
-    c: `// [BAHASA C] Algoritma Insertion Sort In-Place pada Array of Struct
+    c: `// [BAHASA C] Insertion Sort In-Place: Mendukung Numerik & String (strcmp)
+#include <stdio.h>
+#include <string.h>
+
+/**
+ * Insertion Sort berdasarkan Nama Produk (String Alfabetis A-Z)
+ * Kompleksitas Waktu:
+ *   - Best Case  : O(n) saat array sudah terurut
+ *   - Worst Case : O(n^2) saat array terurut terbalik
+ * Kompleksitas Ruang: O(1) Auxiliary (In-Place Sorting)
+ */
+void insertionSortByName(Product arr[], int n, int ascending) {
+    for (int i = 1; i < n; i++) {
+        Product key = arr[i]; // Memegang elemen aktif sebagai Key
+        int j = i - 1;
+
+        // Perbandingan string leksikografis menggunakan strcmp()
+        // strcmp(a, b) > 0 berarti string a lebih besar dari b (A-Z)
+        while (j >= 0 && (ascending ? (strcmp(arr[j].name, key.name) > 0)
+                                    : (strcmp(arr[j].name, key.name) < 0))) {
+            arr[j + 1] = arr[j]; // Menggeser elemen ke kanan (SHIFT)
+            j = j - 1;
+        }
+        arr[j + 1] = key; // Menyisipkan Key pada slot yang tepat (INSERT)
+    }
+}
+
+/**
+ * Insertion Sort berdasarkan Harga (Numerik double)
+ * Kompleksitas Waktu: O(n^2) rata-rata, O(n) terbaik
+ */
 void insertionSortByPrice(Product arr[], int n, int ascending) {
     for (int i = 1; i < n; i++) {
         Product key = arr[i];
@@ -181,10 +244,10 @@ void insertionSortByPrice(Product arr[], int n, int ascending) {
 
         while (j >= 0 && (ascending ? (arr[j].price > key.price)
                                     : (arr[j].price < key.price))) {
-            arr[j + 1] = arr[j]; // Geser elemen ke kanan (SHIFT)
+            arr[j + 1] = arr[j]; // Geser elemen ke kanan
             j = j - 1;
         }
-        arr[j + 1] = key; // Sisipkan Key pada posisi yang tepat (INSERT)
+        arr[j + 1] = key; // Sisipkan Key
     }
 }`,
     js: `// [JAVASCRIPT ES6] Insertion Sort Generator (js/algorithms.js)
@@ -195,9 +258,10 @@ export function* insertionSort(items, property, direction = 'asc') {
     let j = i - 1;
     yield { type: 'COMPARE', indices: { active: i, compare: j } };
 
+    // Mendukung perbandingan angka maupun nama (localeCompare / string)
     while (j >= 0 && (direction === 'asc'
-      ? arr[j][property] > key[property]
-      : arr[j][property] < key[property])) {
+      ? comparePropertyValues(arr[j][property], key[property], property) > 0
+      : comparePropertyValues(arr[j][property], key[property], property) < 0)) {
       arr[j + 1] = arr[j];
       yield { type: 'SHIFT', indices: { active: j + 1, compare: j } };
       j--;
@@ -208,7 +272,41 @@ export function* insertionSort(items, property, direction = 'asc') {
 }`
   },
   selection_sort: {
-    c: `// [BAHASA C] Algoritma Selection Sort pada Array of Struct
+    c: `// [BAHASA C] Selection Sort In-Place: Mendukung Numerik & String (strcmp)
+#include <stdio.h>
+#include <string.h>
+
+/**
+ * Selection Sort berdasarkan Nama Produk (Leksikografis A-Z via strcmp)
+ * Kompleksitas Waktu:
+ *   - Best, Average, Worst Case: O(n^2) karena selalu mengevaluasi n*(n-1)/2 perbandingan
+ * Kompleksitas Ruang: O(1) Auxiliary (In-Place)
+ * Keunggulan: Melakukan maksimal n-1 kali pertukaran (SWAP)
+ */
+void selectionSortByName(Product arr[], int n, int ascending) {
+    for (int i = 0; i < n - 1; i++) {
+        int targetIdx = i; // Menandai kandidat minimum/maksimum
+
+        for (int j = i + 1; j < n; j++) {
+            int cmp = strcmp(arr[j].name, arr[targetIdx].name);
+            int isBetter = ascending ? (cmp < 0) : (cmp > 0);
+            if (isBetter) {
+                targetIdx = j; // Ditemukan kandidat ekstrem baru (MIN_FOUND)
+            }
+        }
+
+        // Tukar posisi elemen i dengan targetIdx (SWAP)
+        if (targetIdx != i) {
+            Product temp = arr[i];
+            arr[i] = arr[targetIdx];
+            arr[targetIdx] = temp;
+        }
+    }
+}
+
+/**
+ * Selection Sort berdasarkan Harga (Numerik double)
+ */
 void selectionSortByPrice(Product arr[], int n, int ascending) {
     for (int i = 0; i < n - 1; i++) {
         int targetIdx = i;
@@ -216,13 +314,13 @@ void selectionSortByPrice(Product arr[], int n, int ascending) {
             int isBetter = ascending ? (arr[j].price < arr[targetIdx].price)
                                      : (arr[j].price > arr[targetIdx].price);
             if (isBetter) {
-                targetIdx = j; // Kandidat nilai ekstrem baru (MIN_FOUND)
+                targetIdx = j;
             }
         }
         if (targetIdx != i) {
             Product temp = arr[i];
             arr[i] = arr[targetIdx];
-            arr[targetIdx] = temp; // Pertukaran posisi (SWAP)
+            arr[targetIdx] = temp;
         }
     }
 }`,
@@ -233,9 +331,8 @@ export function* selectionSort(items, property, direction = 'asc') {
     let targetIdx = i;
     for (let j = i + 1; j < arr.length; j++) {
       yield { type: 'COMPARE', indices: { active: targetIdx, compare: j } };
-      const isBetter = direction === 'asc'
-        ? arr[j][property] < arr[targetIdx][property]
-        : arr[j][property] > arr[targetIdx][property];
+      const cmp = comparePropertyValues(arr[j][property], arr[targetIdx][property], property);
+      const isBetter = direction === 'asc' ? cmp < 0 : cmp > 0;
       if (isBetter) {
         targetIdx = j;
         yield { type: 'MIN_FOUND', indices: { active: targetIdx, compare: i } };
@@ -249,21 +346,82 @@ export function* selectionSort(items, property, direction = 'asc') {
 }`
   },
   searching: {
-    c: `// [BAHASA C] Linear Search & Binary Search pada Array of Struct
-int linearSearchById(Product arr[], int n, int targetId) {
+    c: `// [BAHASA C] Searching: Linear Search O(n) & Binary Search O(log n) Generik
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
+/**
+ * 1. LINEAR SEARCH O(n)
+ * Menelusuri seluruh elemen sekuensial satu per satu dari indeks 0 hingga n-1.
+ * Kompleksitas Waktu: O(n) terburuk/rata-rata, O(1) terbaik.
+ */
+int linearSearchById(const Product* arr, int n, int targetId) {
     for (int i = 0; i < n; i++) {
         if (arr[i].id == targetId) return i; // FOUND
+    }
+    return -1; // NOT FOUND
+}
+
+/**
+ * 2. BINARY SEARCH O(log n) DENGAN PENANGANAN TIPE DATA GENERIK
+ * Prasyarat Mutlak: Array HARUS sudah terurut (Sorted)!
+ * Menggunakan strategi Divide and Conquer: membagi separuh rentang pencarian
+ * setiap langkah perbandingan sehingga kompleksitas waktu tereduksi drastis menjadi O(log n).
+ *
+ * Menggunakan pointer 'const Product* arr' untuk efisiensi memori stack,
+ * menghindari penyalinan seluruh array data struct.
+ */
+
+// A. Pencarian Biner berdasarkan ID Produk (Integer)
+int binarySearchById(const Product* arr, int n, int targetId, int ascending) {
+    int low = 0, high = n - 1;
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        if (arr[mid].id == targetId) return mid; // Titik tengah cocok
+        if (ascending) {
+            if (arr[mid].id < targetId) low = mid + 1;
+            else high = mid - 1;
+        } else {
+            if (arr[mid].id > targetId) low = mid + 1;
+            else high = mid - 1;
+        }
     }
     return -1;
 }
 
-int binarySearchById(Product arr[], int n, int targetId) {
+// B. Pencarian Biner berdasarkan Harga (Double) / Rating (Float) dengan Epsilon
+int binarySearchByPrice(const Product* arr, int n, double targetPrice, int ascending) {
+    int low = 0, high = n - 1;
+    const double EPSILON = 1e-5; // Menghindari kesalahan presisi desimal floating-point
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        if (fabs(arr[mid].price - targetPrice) < EPSILON) return mid;
+        if (ascending) {
+            if (arr[mid].price < targetPrice) low = mid + 1;
+            else high = mid - 1;
+        } else {
+            if (arr[mid].price > targetPrice) low = mid + 1;
+            else high = mid - 1;
+        }
+    }
+    return -1;
+}
+
+// C. Pencarian Biner berdasarkan Nama Produk (String via strcmp)
+int binarySearchByName(const Product* arr, int n, const char* targetName, int ascending) {
     int low = 0, high = n - 1;
     while (low <= high) {
         int mid = low + (high - low) / 2;
-        if (arr[mid].id == targetId) return mid;
-        if (arr[mid].id < targetId) low = mid + 1;
-        else high = mid - 1;
+        int cmp = strcmp(arr[mid].name, targetName);
+        if (cmp == 0) return mid; // String identik ditemukan
+        if (ascending) {
+            if (cmp < 0) low = mid + 1;
+            else high = mid - 1;
+        } else {
+            if (cmp > 0) low = mid + 1;
+            else high = mid - 1;
+        }
     }
     return -1;
 }`,
@@ -279,11 +437,13 @@ export function* binarySearch(items, keyword, property = 'id') {
   while (low <= high) {
     const mid = Math.floor((low + high) / 2);
     yield { type: 'CHECKING', indices: { active: mid, low, high } };
-    if (items[mid][property] === target) {
+    const cmp = comparePropertyValues(items[mid][property], target, property);
+    if (cmp === 0) {
+      // Ekspansi traversal lokal kiri & kanan untuk menangkap seluruh item duplikat
       yield { type: 'FOUND', indices: { active: mid } };
       return;
     }
-    if (items[mid][property] < target) low = mid + 1;
+    if (sortOrder === 'asc' ? cmp < 0 : cmp > 0) low = mid + 1;
     else high = mid - 1;
   }
 }`
@@ -302,6 +462,7 @@ function formatPropValue(product, prop) {
   if (!product) return '-';
   if (prop === 'price') return formatIDR(product.price);
   if (prop === 'rating') return `★ ${product.rating.toFixed(1)}`;
+  if (prop === 'name') return `"${product.name}"`;
   return `ID:${product.id}`;
 }
 
@@ -393,6 +554,91 @@ function appendTerminalLog(message, stepType = 'INFO') {
   logCounterBadgeEl.textContent = `${logEntryCount} BARIS LOG`;
 }
 
+/**
+ * Mengunci atau membuka kembali seluruh input konfigurasi algoritma
+ * selama proses playback (auto-run maupun dijeda) sedang aktif.
+ */
+function setAlgorithmControlsLock(locked) {
+  isPlaybackSessionActive = locked;
+
+  sortMethodEl.disabled = locked;
+  sortPropertyEl.disabled = locked;
+  sortDirectionEl.disabled = locked;
+  btnRunSort.disabled = locked;
+  if (btnShuffleCatalog) {
+    btnShuffleCatalog.disabled = locked;
+  }
+
+  searchMethodEl.disabled = locked;
+  searchPropertyEl.disabled = locked;
+  searchKeywordEl.disabled = locked;
+  btnRunSearch.disabled = locked;
+
+  playbackModeRadios.forEach(radio => {
+    radio.disabled = locked;
+  });
+
+  tourSortingPanelEl.classList.toggle('panel-locked', locked);
+  tourSearchingPanelEl.classList.toggle('panel-locked', locked);
+
+  btnRunSort.textContent = locked && currentAlgorithmKind === 'SORT'
+    ? 'SORTING AKTIF...'
+    : 'JALANKAN SORTING';
+
+  btnRunSearch.textContent = locked && currentAlgorithmKind === 'SEARCH'
+    ? 'PENCARIAN AKTIF...'
+    : 'CARI PRODUK';
+
+  const addCartButtons = productGridEl.querySelectorAll('.btn-add-cart');
+  addCartButtons.forEach(btn => {
+    const card = btn.closest('.product-card');
+    const pid = card ? Number(card.dataset.productId) : null;
+    const prod = catalogArray.find(p => p.id === pid);
+    if (locked) {
+      btn.disabled = true;
+    } else {
+      btn.disabled = !prod || prod.stock <= 0;
+    }
+  });
+}
+
+/**
+ * Sinkronisasi status slider kecepatan dan tombol playback
+ * berdasarkan Mode Eksekusi (Animasi Interaktif vs Instan) serta progres langkah.
+ */
+function syncPlaybackAndModeUI() {
+  const mode = getSelectedPlaybackMode();
+  const isInstant = mode === 'instant';
+
+  speedRangeInputEl.disabled = isInstant;
+  speedControlBlockEl.classList.toggle('block-disabled', isInstant);
+
+  if (isInstant || stepHistory.length === 0) {
+    btnStepPrev.disabled = true;
+    btnStepPauseResume.disabled = true;
+    btnStepNext.disabled = true;
+    btnStepStop.disabled = true;
+    btnStepPauseResume.textContent = 'JEDA';
+    btnStepStop.textContent = 'LEWATI >>';
+    return;
+  }
+
+  const isAtFinalStep = currentStepIndex >= stepHistory.length - 1;
+
+  btnStepPrev.disabled = currentStepIndex <= 0;
+  btnStepNext.disabled = isAtFinalStep;
+  btnStepPauseResume.disabled = false;
+  btnStepStop.disabled = isAtFinalStep && !isPlaybackSessionActive;
+
+  if (isAtFinalStep) {
+    btnStepPauseResume.textContent = 'ULANGI';
+    btnStepStop.textContent = 'SELESAI';
+  } else {
+    btnStepPauseResume.textContent = isPaused ? 'LANJUT' : 'JEDA';
+    btnStepStop.textContent = 'LEWATI >>';
+  }
+}
+
 function buildEnrichedStepHistory(generator, kind, meta = {}) {
   const rawSteps = [];
   const t0 = performance.now();
@@ -404,61 +650,66 @@ function buildEnrichedStepHistory(generator, kind, meta = {}) {
   const t1 = performance.now();
   lastExecutionDurationMs = (t1 - t0).toFixed(2);
 
-  let currentKeyProduct = null;
   const matchedSet = new Set();
 
   return rawSteps.map((step, index) => {
     const displayArray = [...step.arraySnapshot];
     let humanText = step.logMessage;
+    const currentKeyProduct = step.keyProduct || null;
 
     if (kind === 'SORT') {
       const prop = meta.property || 'price';
       const isSelection = meta.method === 'selection';
+      const targetRole = meta.direction === 'desc' ? 'maksimum' : 'minimum';
 
       if (step.type === 'COMPARE') {
-        currentKeyProduct = step.arraySnapshot[step.indices.active];
         const cmpProduct = step.arraySnapshot[step.indices.compare];
         if (isSelection) {
-          humanText = `Membandingkan kandidat ekstrem [${step.indices.active}] "${currentKeyProduct.name}" (${formatPropValue(currentKeyProduct, prop)}) dengan Indeks [${step.indices.compare}] "${cmpProduct.name}" (${formatPropValue(cmpProduct, prop)}).`;
+          humanText = `Membandingkan kandidat ${targetRole} Indeks [${step.indices.active}] ('${currentKeyProduct.name}': ${formatPropValue(currentKeyProduct, prop)}) dengan Indeks [${step.indices.compare}] ('${cmpProduct.name}': ${formatPropValue(cmpProduct, prop)}).`;
         } else {
-          humanText = `Membandingkan Key "${currentKeyProduct.name}" (${formatPropValue(currentKeyProduct, prop)}) dengan Indeks [${step.indices.compare}] "${cmpProduct.name}" (${formatPropValue(cmpProduct, prop)}).`;
+          humanText = `Membandingkan Key sementara ('${currentKeyProduct.name}': ${formatPropValue(currentKeyProduct, prop)}) pada slot [${step.indices.active}] dengan elemen Indeks [${step.indices.compare}] ('${cmpProduct.name}': ${formatPropValue(cmpProduct, prop)}).`;
         }
       } else if (step.type === 'MIN_FOUND') {
-        currentKeyProduct = step.arraySnapshot[step.indices.active];
-        humanText = `Kandidat ekstrem baru ditemukan pada Indeks [${step.indices.active}]: "${currentKeyProduct.name}" (${formatPropValue(currentKeyProduct, prop)}).`;
+        humanText = `Kandidat ${targetRole} baru ditemukan pada Indeks [${step.indices.active}] ('${currentKeyProduct.name}' - ${formatPropValue(currentKeyProduct, prop)}).`;
       } else if (step.type === 'SHIFT') {
-        const shiftedProduct = step.arraySnapshot[step.indices.active];
-        if (currentKeyProduct && step.indices.compare !== null) {
-          displayArray[step.indices.compare] = currentKeyProduct;
-        }
-        humanText = `Nilai pada Indeks [${step.indices.compare}] digeser ke kanan menuju Indeks [${step.indices.active}] ("${shiftedProduct.name}") untuk membuka ruang bagi Key.`;
+        const shiftedProduct = step.shiftedProduct || step.arraySnapshot[step.indices.active];
+        humanText = `Menggeser elemen [${step.indices.compare}] ('${shiftedProduct.name}') ke kanan menuju Indeks [${step.indices.active}], sehingga Key sementara ('${currentKeyProduct.name}') menempati slot Indeks [${step.indices.compare}].`;
       } else if (step.type === 'SWAP') {
-        const itemA = step.arraySnapshot[step.indices.active];
-        const itemB = step.arraySnapshot[step.indices.compare];
-        humanText = `Menukar posisi (SWAP) elemen Indeks [${step.indices.active}] ("${itemA.name}") dengan Indeks [${step.indices.compare}] ("${itemB.name}").`;
+        const fromIdx = step.indices.active;
+        const toIdx = step.indices.compare;
+        const itemAtActiveNow = step.arraySnapshot[fromIdx];
+        const itemAtCompareNow = step.arraySnapshot[toIdx];
+        humanText = `Menukar (SWAP) elemen Indeks [${fromIdx}] ('${itemAtCompareNow.name}') dengan target ${targetRole} Indeks [${toIdx}] ('${itemAtActiveNow.name}').`;
       } else if (step.type === 'INSERT') {
         const insertedProduct = step.arraySnapshot[step.indices.active];
-        humanText = `Posisi ditemukan! Menyisipkan Key "${insertedProduct.name}" ke posisi Array Indeks [${step.indices.active}].`;
+        humanText = `Menyisipkan (INSERT) Key sementara ('${insertedProduct.name}') secara permanen pada Indeks [${step.indices.active}].`;
       } else if (step.type === 'COMPLETE') {
-        currentKeyProduct = null;
-        humanText = `Pengurutan ${isSelection ? 'Selection Sort' : 'Insertion Sort'} selesai! Anda masih bisa menekan << PREV untuk meninjau langkah sebelumnya.`;
+        humanText = `Pengurutan ${isSelection ? 'Selection Sort' : 'Insertion Sort'} selesai tuntas! Seluruh kontrol form telah dibuka kembali.`;
       }
     } else if (kind === 'SEARCH') {
       if (step.type === 'NOT_SORTED') {
         humanText = step.logMessage;
-      } else if (step.type === 'FOUND' && step.indices.active !== null) {
-        matchedSet.add(step.indices.active);
+      } else if (step.type === 'FOUND') {
+        if (step.indices?.matchedIndices && Array.isArray(step.indices.matchedIndices)) {
+          step.indices.matchedIndices.forEach(idx => matchedSet.add(idx));
+        }
+        if (step.indices?.active !== null && step.indices?.active !== undefined) {
+          matchedSet.add(step.indices.active);
+        }
         const item = step.arraySnapshot[step.indices.active];
-        humanText = `COCOK! Produk "${item.name}" (ID:${item.id}) ditemukan pada Array Indeks [${step.indices.active}].`;
+        humanText = `COCOK! Produk '${item.name}' (ID:${item.id}) ditemukan pada Array Indeks [${step.indices.active}]. Total cocok: ${matchedSet.size} item.`;
       } else if (step.type === 'CHECKING' && step.indices.active !== null) {
         const item = step.arraySnapshot[step.indices.active];
         if (meta.method === 'binary') {
-          humanText = `Rentang Binary [${step.indices.low}..${step.indices.high}] -> Memeriksa titik tengah Mid [${step.indices.active}] "${item.name}".`;
+          humanText = `Rentang Binary [${step.indices.low}..${step.indices.high}] -> Memeriksa titik tengah Mid [${step.indices.active}] ('${item.name}').`;
         } else {
-          humanText = `Memeriksa Array Indeks [${step.indices.active}] ("${item.name}") -> Tidak cocok.`;
+          humanText = `Memeriksa Array Indeks [${step.indices.active}] ('${item.name}') -> Belum cocok dengan kata kunci.`;
         }
       } else if (step.type === 'COMPLETE') {
-        humanText = `Pencarian ${meta.method === 'binary' ? 'Binary Search' : 'Linear Search'} selesai. Ditemukan ${matchedSet.size} produk yang cocok.`;
+        if (step.indices?.matchedIndices && Array.isArray(step.indices.matchedIndices)) {
+          step.indices.matchedIndices.forEach(idx => matchedSet.add(idx));
+        }
+        humanText = `Pencarian ${meta.method === 'binary' ? 'Binary Search' : 'Linear Search'} selesai. Ditemukan ${matchedSet.size} produk yang sesuai.`;
       }
     }
 
@@ -499,47 +750,63 @@ function renderCatalogGrid(items, stepContext = null, animateMovement = true) {
 
     let ribbonText = `ARRAY INDEKS [${idx}]`;
 
+    const passStartIdx = stepContext?.indices?.passStart ?? null;
+    const passIndex = stepContext?.indices?.passIndex ?? null;
+
     if (currentAlgorithmKind === 'SORT' && stepContext) {
-      if (stepType === 'COMPARE') {
+      if (stepType === 'COMPLETE') {
+        card.classList.add('state-sorted');
+        ribbonText = `✓ TERURUT LENGKAP [${idx}]`;
+      } else if (currentAlgoMeta.method === 'selection' && passStartIdx !== null && idx < passStartIdx) {
+        card.classList.add('state-sorted');
+        ribbonText = `✓ POSISI TERURUT [${idx}]`;
+      } else if (currentAlgoMeta.method === 'selection' && passStartIdx !== null && idx === passStartIdx && stepType !== 'SWAP') {
+        card.classList.add('state-target-slot');
+        ribbonText = `🎯 SLOT TUJUAN [${idx}]`;
+      } else if (stepType === 'COMPARE') {
         if (idx === activeIdx) {
           card.classList.add('state-key');
-          ribbonText = `[KEY / KANDIDAT] INDEKS [${idx}]`;
+          ribbonText = currentAlgoMeta.method === 'selection'
+            ? `★ KANDIDAT EKSTREM [${idx}]`
+            : `🔑 KEY DIUJI [${idx}]`;
         } else if (idx === compareIdx) {
           card.classList.add('state-compare');
-          ribbonText = `[PEMBANDING j] INDEKS [${idx}]`;
+          ribbonText = `🔍 PEMBANDING [j=${idx}]`;
         }
       } else if (stepType === 'MIN_FOUND') {
         if (idx === activeIdx) {
           card.classList.add('state-insert');
-          ribbonText = `[KANDIDAT BARU] INDEKS [${idx}]`;
-        } else if (idx === compareIdx) {
-          card.classList.add('state-key');
-          ribbonText = `[TARGET URUT] INDEKS [${idx}]`;
+          ribbonText = `★ KANDIDAT BARU [${idx}]`;
         }
       } else if (stepType === 'SHIFT') {
         if (idx === activeIdx) {
-          card.classList.add('state-shift');
-          ribbonText = `GESER KANAN >> [${idx}]`;
+          card.classList.add('state-shift-right');
+          ribbonText = `SHIFT: [${compareIdx}] -> [${idx}]`;
         } else if (idx === compareIdx) {
-          card.classList.add('state-key');
-          ribbonText = `CELAH KEY [${idx}]`;
+          card.classList.add('state-key-slot');
+          ribbonText = `SLOT KOSONG KEY [${idx}]`;
         }
       } else if (stepType === 'SWAP') {
         if (idx === activeIdx || idx === compareIdx) {
-          card.classList.add('state-shift');
-          ribbonText = `DITUKAR (SWAP) [${idx}]`;
+          card.classList.add(idx === activeIdx ? 'state-swap-left' : 'state-swap-right');
+          ribbonText = `SWAP: [${activeIdx}] <-> [${compareIdx}]`;
         }
-      } else if (stepType === 'INSERT' && idx === activeIdx) {
-        card.classList.add('state-insert');
-        ribbonText = `KEY DISISIPKAN DI [${idx}]`;
+      } else if (stepType === 'INSERT') {
+        if (idx === activeIdx) {
+          card.classList.add('state-insert');
+          ribbonText = `✓ KEY DISISIPKAN DI [${idx}]`;
+        } else if (passIndex !== null && idx <= passIndex) {
+          card.classList.add('state-sorted');
+          ribbonText = `✓ SUB-ARRAY RAPI [${idx}]`;
+        }
       }
     } else if (currentAlgorithmKind === 'SEARCH' && stepContext) {
       if (matchedSet.has(idx)) {
         card.classList.add('state-found');
-        ribbonText = `COCOK / MATCH [${idx}]`;
+        ribbonText = `✅ COCOK / MATCH [${idx}]`;
       } else if (idx === activeIdx && stepType === 'CHECKING') {
         card.classList.add('state-compare');
-        ribbonText = currentAlgoMeta.method === 'binary' ? `MID DIUJI [${idx}]` : `SEDANG DIPERIKSA [${idx}]`;
+        ribbonText = currentAlgoMeta.method === 'binary' ? `🔍 MID DIUJI [${idx}]` : `🔍 SEDANG DIPERIKSA [${idx}]`;
       } else if (currentAlgoMeta.method === 'binary' && lowIdx !== null && highIdx !== null && (idx < lowIdx || idx > highIdx)) {
         card.classList.add('state-dimmed');
         ribbonText = `DI LUAR RENTANG [${idx}]`;
@@ -549,11 +816,19 @@ function renderCatalogGrid(items, stepContext = null, animateMovement = true) {
       }
     }
 
+    const isOutOfStock = product.stock <= 0;
+    const isAddDisabled = isPlaybackSessionActive || isOutOfStock;
+    const slotAddress = '0x' + (0x7FFE00 + idx * 0x20).toString(16).toUpperCase();
+
     card.innerHTML = `
       <div class="card-status-ribbon">${ribbonText}</div>
       <div class="card-top-bar">
-        <span class="index-badge">Index[${idx}]</span>
-        <span class="memory-badge" title="Simulasi Alamat Memori Statis">${product.simulatedAddress}</span>
+        <span class="slot-badge" title="Alamat Memori Kontigu Slot Array Fisik &arr[${idx}] (Statis)">
+          <span class="index-badge">[${idx}]</span> Slot Addr: ${slotAddress}
+        </span>
+        <span class="memory-badge" title="Pointer Instance Struct Product di Heap (Berpindah saat Swap/Shift)">
+          Obj Ptr: ${product.simulatedAddress}
+        </span>
       </div>
       <div class="card-image-box">
         <img src="${product.image}" alt="${product.name}">
@@ -568,8 +843,8 @@ function renderCatalogGrid(items, stepContext = null, animateMovement = true) {
           <span class="stock-badge">Stok: ${product.stock}</span>
         </div>
         <div class="product-price">${formatIDR(product.price)}</div>
-        <button class="btn btn-secondary btn-sm btn-add-cart" type="button">
-          + TAMBAH KE KERANJANG
+        <button class="btn btn-secondary btn-sm btn-add-cart" type="button" ${isAddDisabled ? 'disabled' : ''}>
+          <span>${isOutOfStock ? 'STOK HABIS' : '+ TAMBAH KE KERANJANG'}</span>
         </button>
       </div>
     `;
@@ -584,48 +859,41 @@ function renderCatalogGrid(items, stepContext = null, animateMovement = true) {
   }
 
   if (animateMovement && previousPositions.size > 0) {
+    const isSwap = stepType === 'SWAP';
+
     productGridEl.querySelectorAll('.product-card[data-product-id]').forEach(cardEl => {
       const pid = Number(cardEl.dataset.productId);
       const oldRect = previousPositions.get(pid);
       if (!oldRect) return;
+
       const newRect = cardEl.getBoundingClientRect();
       const deltaX = oldRect.left - newRect.left;
       const deltaY = oldRect.top - newRect.top;
 
       if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
         cardEl.style.transition = 'none';
-        cardEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.03)`;
+
+        if (isSwap) {
+          const isLeftCard = deltaX > 0;
+          const arcY = isLeftCard ? -35 : 35;
+          const rotateDeg = isLeftCard ? 4 : -4;
+          cardEl.style.zIndex = isLeftCard ? '25' : '20';
+          cardEl.style.transform = `translate(${deltaX}px, ${deltaY + arcY}px) scale(1.1) rotate(${rotateDeg}deg)`;
+        } else {
+          cardEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.02)`;
+        }
+
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            cardEl.style.transition = 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)';
+            cardEl.style.transition = 'transform 520ms cubic-bezier(0.34, 1.45, 0.64, 1)';
             cardEl.style.transform = '';
+            setTimeout(() => {
+              cardEl.style.zIndex = '';
+            }, 520);
           });
         });
       }
     });
-  }
-}
-
-function updateTransportButtonsState() {
-  const hasSteps = stepHistory.length > 0;
-  if (!hasSteps) {
-    btnStepPrev.disabled = true;
-    btnStepPauseResume.disabled = true;
-    btnStepNext.disabled = true;
-    btnStepStop.disabled = true;
-    btnStepPauseResume.textContent = 'PAUSE';
-    return;
-  }
-
-  btnStepPrev.disabled = currentStepIndex <= 0;
-  btnStepNext.disabled = currentStepIndex >= stepHistory.length - 1;
-  btnStepPauseResume.disabled = false;
-  btnStepStop.disabled = false;
-
-  if (currentStepIndex >= stepHistory.length - 1) {
-    btnStepPauseResume.textContent = 'ULANGI';
-  } else {
-    btnStepPauseResume.textContent = isPaused ? 'CONTINUE' : 'PAUSE';
   }
 }
 
@@ -666,7 +934,11 @@ function applyStepAtIndex(index, logToTerminal = true) {
     appendTerminalLog(step.logMessage, step.type);
   }
 
-  updateTransportButtonsState();
+  if (index >= stepHistory.length - 1) {
+    setAlgorithmControlsLock(false);
+  }
+
+  syncPlaybackAndModeUI();
   renderCatalogGrid(step.displayArray, step, true);
 }
 
@@ -680,8 +952,9 @@ function stopAutoTimer() {
 function startAutoTimer() {
   stopAutoTimer();
   isPaused = false;
+  setAlgorithmControlsLock(true);
   engineStatusEl.textContent = 'BERJALAN (AUTO)';
-  updateTransportButtonsState();
+  syncPlaybackAndModeUI();
 
   playbackTimer = setInterval(() => {
     if (currentStepIndex < stepHistory.length - 1) {
@@ -689,8 +962,9 @@ function startAutoTimer() {
     } else {
       stopAutoTimer();
       isPaused = true;
-      engineStatusEl.textContent = 'SELESAI';
-      updateTransportButtonsState();
+      setAlgorithmControlsLock(false);
+      engineStatusEl.textContent = 'SELESAI TUNTAS';
+      syncPlaybackAndModeUI();
     }
   }, getAnimationSpeedMs());
 }
@@ -704,9 +978,10 @@ function jumpToEndAndFinish() {
   }
 
   isPaused = true;
+  setAlgorithmControlsLock(false);
   applyStepAtIndex(stepHistory.length - 1, false);
-  engineStatusEl.textContent = 'SELESAI (END)';
-  updateTransportButtonsState();
+  engineStatusEl.textContent = 'SELESAI (STOP/END)';
+  syncPlaybackAndModeUI();
 }
 
 function executeAlgorithm(generatorFn, kind, meta = {}) {
@@ -719,9 +994,13 @@ function executeAlgorithm(generatorFn, kind, meta = {}) {
 
   if (stepHistory.length === 1 && stepHistory[0].type === 'NOT_SORTED') {
     isPaused = true;
+    setAlgorithmControlsLock(false);
     applyStepAtIndex(0, true);
-    engineStatusEl.textContent = 'PERINGATAN URUTAN!';
-    showToast('URUTKAN KATALOG TERLEBIH DAHULU SEBELUM BINARY SEARCH!');
+    engineStatusEl.textContent = 'PERINGATAN!';
+    const toastMsg = stepHistory[0].logMessage?.includes('belum terurut')
+      ? 'URUTKAN KATALOG TERLEBIH DAHULU SEBELUM BINARY SEARCH!'
+      : 'MASUKKAN INPUT TARGET YANG VALID!';
+    showToast(toastMsg);
     return;
   }
 
@@ -729,21 +1008,25 @@ function executeAlgorithm(generatorFn, kind, meta = {}) {
   currentStepIndex = -1;
 
   const mode = getSelectedPlaybackMode();
-
   if (mode === 'instant') {
     stepHistory.forEach(s => appendTerminalLog(s.logMessage, s.type));
     isPaused = true;
+    setAlgorithmControlsLock(false);
     applyStepAtIndex(stepHistory.length - 1, false);
     engineStatusEl.textContent = 'SELESAI INSTAN';
-    updateTransportButtonsState();
+    syncPlaybackAndModeUI();
     return;
   }
 
+  isPaused = true;
+  setAlgorithmControlsLock(true);
+  engineStatusEl.textContent = 'SIAP LANGKAH (PAUSED)';
   applyStepAtIndex(0, true);
-  startAutoTimer();
+  syncPlaybackAndModeUI();
 }
 
 function handleRunSorting() {
+  if (isPlaybackSessionActive) return;
   const method = sortMethodEl.value;
   const property = sortPropertyEl.value;
   const direction = sortDirectionEl.value;
@@ -759,6 +1042,7 @@ function handleRunSorting() {
 }
 
 function handleRunSearching() {
+  if (isPlaybackSessionActive) return;
   const method = searchMethodEl.value;
   const property = searchPropertyEl.value;
   const keyword = searchKeywordEl.value.trim();
@@ -784,6 +1068,7 @@ function handleRunSearching() {
 
 function handleResetCatalog() {
   stopAutoTimer();
+  setAlgorithmControlsLock(false);
   currentAlgorithmKind = null;
   stepHistory = [];
   currentStepIndex = -1;
@@ -796,17 +1081,78 @@ function handleResetCatalog() {
   keyHolderBoxEl.classList.add('hidden');
   engineStatusEl.textContent = 'SIAP (IDLE)';
   updateMetricsDisplay('BELUM ADA', 0, 0, '0.00');
-  updateTransportButtonsState();
+  syncPlaybackAndModeUI();
 
+  cartList.clear();
+  ProductRepository.resetStock();
   catalogArray = ProductRepository.getInitialClone();
+  updateCartUI();
   renderCatalogGrid(catalogArray, null, true);
-  appendTerminalLog('[SYSTEM][RESET] Katalog dikembalikan ke susunan Array Master (kondisi awal).', 'COMPLETE');
+  appendTerminalLog('[SYSTEM][RESET] Katalog dikembalikan ke susunan Array Master (kondisi awal). Stok produk dipulihkan.', 'COMPLETE');
   showToast('SUSUNAN KATALOG DIRESET!');
 }
 
+function handleShuffleCatalog() {
+  if (isPlaybackSessionActive) return;
+  stopAutoTimer();
+  setAlgorithmControlsLock(false);
+  currentAlgorithmKind = null;
+  stepHistory = [];
+  currentStepIndex = -1;
+  searchKeywordEl.value = '';
+
+  stepVisualizerBannerEl.classList.remove('banner-warn', 'banner-danger');
+  stepTypeBadgeEl.textContent = 'IDLE';
+  stepProgressTextEl.textContent = 'LANGKAH 0 / 0';
+  stepHumanExplanationEl.textContent = 'Urutan katalog telah diacak menggunakan algoritma Fisher-Yates Shuffle.';
+  keyHolderBoxEl.classList.add('hidden');
+  engineStatusEl.textContent = 'SIAP (IDLE)';
+  updateMetricsDisplay('BELUM ADA', 0, 0, '0.00');
+  syncPlaybackAndModeUI();
+
+  for (let i = catalogArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [catalogArray[i], catalogArray[j]] = [catalogArray[j], catalogArray[i]];
+  }
+
+  appendTerminalLog('[SYSTEM][SHUFFLE] Urutan katalog diacak secara acak (Fisher-Yates Shuffle).', 'COMPLETE');
+  renderCatalogGrid(catalogArray, null, true);
+  showToast('URUTAN KATALOG DIACAK!');
+}
+
+function syncCatalogCardStock(productId) {
+  const card = productGridEl.querySelector(`.product-card[data-product-id="${productId}"]`);
+  if (!card) return;
+  const product = catalogArray.find(p => p.id === productId);
+  if (!product) return;
+
+  const stockBadge = card.querySelector('.stock-badge');
+  if (stockBadge) stockBadge.textContent = `Stok: ${product.stock}`;
+
+  const btnAdd = card.querySelector('.btn-add-cart');
+  if (btnAdd) {
+    const isOutOfStock = product.stock <= 0;
+    btnAdd.disabled = isPlaybackSessionActive || isOutOfStock;
+    const spanText = btnAdd.querySelector('span');
+    if (spanText) {
+      spanText.textContent = isOutOfStock ? 'STOK HABIS' : '+ TAMBAH KE KERANJANG';
+    }
+  }
+}
+
+function syncAllCatalogCardsStock() {
+  catalogArray.forEach(p => syncCatalogCardStock(p.id));
+}
+
 function handleAddToCart(productId) {
-  const targetProduct = catalogArray.find(p => p.id === productId) || ProductRepository.getById(productId);
+  if (isPlaybackSessionActive) return;
+  const targetProduct = catalogArray.find(p => p.id === productId);
   if (!targetProduct) return;
+
+  if (targetProduct.stock <= 0) {
+    showToast('STOK PRODUK HABIS!');
+    return;
+  }
 
   const result = cartList.add(targetProduct, 1);
   if (!result.success) {
@@ -814,8 +1160,11 @@ function handleAddToCart(productId) {
     return;
   }
 
+  ProductRepository.updateStock(targetProduct.id, targetProduct.stock);
+
+  syncCatalogCardStock(targetProduct.id);
   appendTerminalLog(
-    `[LINKED-LIST][ADD] Simpul produk ID:${targetProduct.id} ("${targetProduct.name}") ditambahkan/diperbarui (Qty: ${result.quantity}).`,
+    `[LINKED-LIST][ADD] Simpul produk ID:${targetProduct.id} ("${targetProduct.name}") ditambahkan/diperbarui (Qty: ${result.quantity}, Sisa Stok: ${targetProduct.stock}).`,
     'INSERT'
   );
   updateCartUI();
@@ -839,7 +1188,11 @@ function updateCartUI() {
   btnCheckoutOpen.disabled = items.length === 0;
 
   if (items.length === 0) {
-    linkedListDiagramEl.textContent = '[Head] NULL';
+    linkedListDiagramEl.innerHTML = `
+      <span class="pointer-head-tag">[Head]</span>
+      <span class="pointer-arrow">-&gt;</span>
+      <span class="node-null">NULL</span>
+    `;
     cartItemsContainerEl.innerHTML = `
       <div class="cart-empty-state">
         Rantai Singly Linked List kosong (<code>this.head === null</code>).<br>
@@ -849,11 +1202,26 @@ function updateCartUI() {
     return;
   }
 
-  const chainParts = items.map((entry, idx) => {
-    const prefix = idx === 0 ? '[Head] ' : '';
-    return `${prefix}ID:${entry.product.id}(x${entry.quantity})`;
+  let diagramHTML = '<span class="pointer-head-tag">[Head]</span><span class="pointer-arrow">-&gt;</span>';
+
+  items.forEach((entry, idx) => {
+    const { product, quantity } = entry;
+    const nextAddr = idx < items.length - 1 ? items[idx + 1].product.simulatedAddress : 'NULL';
+    diagramHTML += `
+      <div class="node-badge">
+        <div class="node-badge-header">
+          <span class="node-badge-id">ID:${product.id}</span>
+          <span class="node-badge-qty">x${quantity}</span>
+        </div>
+        <div class="node-badge-addr">${product.simulatedAddress}</div>
+        <div class="node-badge-ptr">&rarr; ${nextAddr}</div>
+      </div>
+      <span class="pointer-arrow">-&gt;</span>
+    `;
   });
-  linkedListDiagramEl.textContent = `${chainParts.join(' -> ')} -> [Tail] NULL`;
+
+  diagramHTML += '<span class="node-null">[Tail] NULL</span>';
+  linkedListDiagramEl.innerHTML = diagramHTML;
 
   cartItemsContainerEl.innerHTML = '';
   items.forEach((entry, index) => {
@@ -885,20 +1253,29 @@ function updateCartUI() {
 
     nodeCard.querySelector('[data-action="dec"]').addEventListener('click', () => {
       cartList.decrease(product.id);
-      appendTerminalLog(`[LINKED-LIST][DECREASE] Mengurangi kuantitas simpul produk ID:${product.id}.`, 'SHIFT');
+      ProductRepository.updateStock(product.id, product.stock);
+      syncCatalogCardStock(product.id);
+      appendTerminalLog(`[LINKED-LIST][DECREASE] Mengurangi kuantitas simpul produk ID:${product.id} (Sisa Stok: ${product.stock}).`, 'SHIFT');
       updateCartUI();
     });
 
     nodeCard.querySelector('[data-action="inc"]').addEventListener('click', () => {
+      if (product.stock <= 0) {
+        return showToast('Melebihi sisa stok produk!');
+      }
       const res = cartList.add(product, 1);
       if (!res.success) return showToast(res.message);
-      appendTerminalLog(`[LINKED-LIST][INCREASE] Menambah kuantitas simpul produk ID:${product.id} menjadi ${res.quantity}.`, 'INSERT');
+      ProductRepository.updateStock(product.id, product.stock);
+      syncCatalogCardStock(product.id);
+      appendTerminalLog(`[LINKED-LIST][INCREASE] Menambah kuantitas simpul produk ID:${product.id} menjadi ${res.quantity} (Sisa Stok: ${product.stock}).`, 'INSERT');
       updateCartUI();
     });
 
     nodeCard.querySelector('[data-action="remove"]').addEventListener('click', () => {
       cartList.remove(product.id);
-      appendTerminalLog(`[LINKED-LIST][REMOVE] Memutus pointer simpul produk ID:${product.id} dari Linked List.`, 'COMPLETE');
+      ProductRepository.updateStock(product.id, product.stock);
+      syncCatalogCardStock(product.id);
+      appendTerminalLog(`[LINKED-LIST][REMOVE] Memutus pointer simpul produk ID:${product.id} dari Linked List (Stok dipulihkan: ${product.stock}).`, 'COMPLETE');
       updateCartUI();
     });
 
@@ -914,6 +1291,8 @@ function toggleCartDrawer(open) {
 function openCheckoutModal() {
   const items = cartList.toArray();
   if (items.length === 0) return;
+
+  qrisImageEl.src = generateDummyQRISSVG();
 
   checkoutOrderListEl.innerHTML = '';
   let grandTotal = 0;
@@ -977,8 +1356,14 @@ function handleConfirmCheckout() {
 function finalizeReceiptAndClearCart() {
   receiptModalBackdropEl.classList.add('hidden');
   cartList.clear();
+  ProductRepository.resetStock();
+  catalogArray.forEach(p => {
+    p.stock = ProductRepository.getMasterStock(p.id);
+    ProductRepository.updateStock(p.id, p.stock);
+  });
+  syncAllCatalogCardsStock();
   updateCartUI();
-  appendTerminalLog('[CHECKOUT][CLEAR] Transaksi selesai. Method cart.clear() dieksekusi (this.head = null).', 'COMPLETE');
+  appendTerminalLog('[CHECKOUT][CLEAR] Transaksi selesai. Stok produk dipulihkan ke master data dan keranjang dikosongkan.', 'COMPLETE');
   showToast('TRANSAKSI SELESAI & KERANJANG DIKOSONGKAN!');
 }
 
@@ -992,40 +1377,77 @@ function renderCodeInspector() {
   tabBtnLangJS.className = `btn ${activeCodeLang === 'js' ? 'btn-primary' : 'btn-secondary'} btn-sm`;
 }
 
-const appGuidedTour = new GuidedTour([
+const appGuidedTour = new GuidedTour(
+  [
+    {
+      selector: '#tourSortingPanel',
+      title: '1. PANEL PENGURUTAN (SORTING)',
+      description: 'Pilih algoritma Insertion Sort atau Selection Sort, tentukan properti (Nama Produk, Harga, Rating, atau ID) beserta arah urutannya, lalu klik "JALANKAN SORTING".',
+      beforeEnter: () => toggleCartDrawer(false)
+    },
+    {
+      selector: '#tourSearchingPanel',
+      title: '2. PANEL PENCARIAN (SEARCHING)',
+      description: 'Gunakan Linear Search untuk pencarian sekuensial bebas, atau Binary Search untuk pencarian cepat (pastikan katalog sudah diurutkan terlebih dahulu).'
+    },
+    {
+      selector: '#tourExecutionBar',
+      title: '3. KONTROL GENERATOR & KECEPATAN',
+      description: 'Atur jeda kecepatan animasi secara real-time, atau gunakan tombol << PREV, PAUSE/CONTINUE, NEXT >>, dan LEWATI >> untuk menganalisis langkah algoritma satu per satu.'
+    },
+    {
+      selector: null,
+      title: '4. TOMBOL PINTAS (KEYBOARD SHORTCUTS)',
+      description: `
+        <p style="margin-bottom: 0.65rem;">Kendalikan simulasi secara cepat menggunakan tombol keyboard:</p>
+        <div class="tour-shortcuts-table">
+          <div class="tour-shortcut-row">
+            <span class="tour-key-badge"><kbd>[Space]</kbd></span>
+            <span class="tour-key-desc">: Jeda / Lanjut animasi</span>
+          </div>
+          <div class="tour-shortcut-row">
+            <span class="tour-key-badge"><kbd>[←]</kbd> (ArrowLeft)</span>
+            <span class="tour-key-desc">: Langkah sebelumnya (Prev)</span>
+          </div>
+          <div class="tour-shortcut-row">
+            <span class="tour-key-badge"><kbd>[→]</kbd> (ArrowRight)</span>
+            <span class="tour-key-desc">: Langkah berikutnya (Next)</span>
+          </div>
+          <div class="tour-shortcut-row">
+            <span class="tour-key-badge"><kbd>[Esc]</kbd></span>
+            <span class="tour-key-desc">: Menutup modal/keranjang aktif</span>
+          </div>
+        </div>
+      `
+    },
+    {
+      selector: '#tourCatalogSection',
+      title: '5. ETALASE KATALOG & DUALISASI MEMORI',
+      description: 'Setiap kartu produk menampilkan alamat fisik slot memori array yang statis (Slot Addr: 0x7FFE...) dan alamat pointer objek struct di memori heap (Obj Ptr: 0x7FFE...).'
+    },
+    {
+      selector: '#tourTerminalSection',
+      title: '6. TERMINAL EKSEKUSI LOG',
+      description: 'Mencatat setiap operasi perbandingan (COMPARE), pergeseran (SHIFT), pertukaran (SWAP), penyisipan (INSERT), dan pencocokan data secara berurutan.'
+    },
+    {
+      selector: '#cartDrawer',
+      title: '7. KERANJANG SINGLY LINKED LIST',
+      description: 'Memvisualisasikan rantai pointer objek nyata di Heap Memory ([Head] -> Node -> [Tail] NULL) setiap kali Anda menambah atau menghapus barang belanjaan.',
+      beforeEnter: () => toggleCartDrawer(true)
+    }
+  ],
   {
-    selector: '#tourSortingPanel',
-    title: '1. PANEL PENGURUTAN (SORTING)',
-    description: 'Pilih algoritma Insertion Sort atau Selection Sort, tentukan properti (Harga, Rating, atau ID) beserta arah urutannya, lalu klik "JALANKAN SORTING".',
-    beforeEnter: () => toggleCartDrawer(false)
-  },
-  {
-    selector: '#tourSearchingPanel',
-    title: '2. PANEL PENCARIAN (SEARCHING)',
-    description: 'Gunakan Linear Search untuk pencarian sekuensial bebas, atau Binary Search untuk pencarian cepat (pastikan katalog sudah diurutkan terlebih dahulu).'
-  },
-  {
-    selector: '#tourExecutionBar',
-    title: '3. KONTROL GENERATOR & KECEPATAN',
-    description: 'Atur jeda kecepatan animasi secara real-time, atau gunakan tombol << PREV, PAUSE/CONTINUE, NEXT >>, dan END untuk menganalisis langkah algoritma satu per satu.'
-  },
-  {
-    selector: '#tourCatalogSection',
-    title: '4. ETALASE KATALOG & ALAMAT MEMORI',
-    description: 'Setiap kartu produk menampilkan indeks Array saat ini, simulasi alamat memori heksadesimal (0x7FFE...), serta pita indikator status selama algoritma berjalan.'
-  },
-  {
-    selector: '#tourTerminalSection',
-    title: '5. TERMINAL EKSEKUSI LOG',
-    description: 'Mencatat setiap operasi perbandingan (COMPARE), pergeseran (SHIFT/SWAP), penyisipan (INSERT), dan pencocokan data secara berurutan.'
-  },
-  {
-    selector: '#cartDrawer',
-    title: '6. KERANJANG SINGLY LINKED LIST',
-    description: 'Memvisualisasikan rantai pointer objek nyata di Heap Memory ([Head] -> Node -> [Tail] NULL) setiap kali Anda menambah atau menghapus barang belanjaan.',
-    beforeEnter: () => toggleCartDrawer(true)
+    onFinish: () => {
+      try {
+        localStorage.setItem(TOUR_STORAGE_KEY, 'true');
+      } catch {
+        // Abaikan jika browser memblokir akses localStorage
+      }
+      toggleCartDrawer(false);
+    }
   }
-]);
+);
 
 function closeAllModalsOnEsc() {
   checkoutModalBackdropEl.classList.add('hidden');
@@ -1043,24 +1465,49 @@ function closeAllModalsOnEsc() {
 function initApp() {
   renderCatalogGrid(catalogArray, null, false);
   updateCartUI();
-  updateTransportButtonsState();
+  syncPlaybackAndModeUI();
   renderCodeInspector();
   appendTerminalLog('[SYSTEM][INIT] MineForge Gear (Bedrock Ore UI Edition) siap. 10 Struct Product dimuat dari js/data.js.', 'COMPLETE');
 
   btnRunSort.addEventListener('click', handleRunSorting);
   btnResetCatalog.addEventListener('click', handleResetCatalog);
+  if (btnShuffleCatalog) btnShuffleCatalog.addEventListener('click', handleShuffleCatalog);
   btnRunSearch.addEventListener('click', handleRunSearching);
+
+  function updateSearchPlaceholder() {
+    const isBinary = searchMethodEl.value === 'binary';
+    if (!isBinary) {
+      searchKeywordEl.placeholder = 'Ketik Creeper, Hoodie, atau 205...';
+      return;
+    }
+    const prop = searchPropertyEl.value;
+    if (prop === 'name') {
+      searchKeywordEl.placeholder = 'Ketik nama produk (A-Z, contoh: Creeper, Diamond)...';
+    } else if (prop === 'price') {
+      searchKeywordEl.placeholder = 'Masukkan nominal harga (contoh: 185000)...';
+    } else if (prop === 'rating') {
+      searchKeywordEl.placeholder = 'Masukkan rating bintang (contoh: 4.8)...';
+    } else {
+      searchKeywordEl.placeholder = 'Masukkan angka ID produk (contoh: 205)...';
+    }
+  }
 
   searchMethodEl.addEventListener('change', () => {
     const isBinary = searchMethodEl.value === 'binary';
     binaryPropertyFieldEl.classList.toggle('hidden', !isBinary);
-    searchKeywordEl.placeholder = isBinary
-      ? 'Masukkan angka ID (205), Harga (185000), atau Rating (4.8)...'
-      : 'Ketik Creeper, Hoodie, atau 205...';
+    updateSearchPlaceholder();
   });
+
+  searchPropertyEl.addEventListener('change', updateSearchPlaceholder);
 
   searchKeywordEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleRunSearching();
+  });
+
+  playbackModeRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      syncPlaybackAndModeUI();
+    });
   });
 
   speedRangeInputEl.addEventListener('input', () => {
@@ -1073,6 +1520,7 @@ function initApp() {
   btnStepPrev.addEventListener('click', () => {
     stopAutoTimer();
     isPaused = true;
+    setAlgorithmControlsLock(true);
     engineStatusEl.textContent = 'DIJEDA (MANUAL PREV)';
     if (currentStepIndex > 0) {
       applyStepAtIndex(currentStepIndex - 1, false);
@@ -1100,8 +1548,9 @@ function initApp() {
     } else {
       stopAutoTimer();
       isPaused = true;
+      setAlgorithmControlsLock(true);
       engineStatusEl.textContent = 'DIJEDA (PAUSED)';
-      updateTransportButtonsState();
+      syncPlaybackAndModeUI();
     }
   });
 
@@ -1183,7 +1632,30 @@ function initApp() {
     if (e.key === 'Escape') {
       closeAllModalsOnEsc();
     }
+    if (document.activeElement === searchKeywordEl) return;
+
+    if (e.code === 'ArrowRight') {
+      e.preventDefault();
+      btnStepNext.click();
+    } else if (e.code === 'ArrowLeft') {
+      e.preventDefault();
+      btnStepPrev.click();
+    } else if (e.code === 'Space') {
+      e.preventDefault();
+      btnStepPauseResume.click();
+    }
   });
+
+  try {
+    const tourCompleted = localStorage.getItem(TOUR_STORAGE_KEY);
+    if (!tourCompleted) {
+      setTimeout(() => {
+        appGuidedTour.start();
+      }, 400);
+    }
+  } catch {
+    // Abaikan jika penyimpanan lokal dibatasi browser
+  }
 }
 
 initApp();
